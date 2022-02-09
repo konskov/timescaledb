@@ -77,7 +77,7 @@ subtract_interval_from_now(Interval *lag, Oid time_dim_type)
 #else
 	Datum res = TimestampTzGetDatum(GetCurrentTimestamp());
 #endif
-
+	// maybe could have an elog for retention_policy here?
 	switch (time_dim_type)
 	{
 		case TIMESTAMPOID:

@@ -8,6 +8,11 @@
 #define TIMESCALEDB_TSL_BGW_POLICY_RETENTION_API_H
 
 #include <postgres.h>
+#include "jsonb_utils.h"
+
+#define POLICY_RETENTION_PROC_NAME "policy_retention"
+#define CONFIG_KEY_HYPERTABLE_ID "hypertable_id"
+#define CONFIG_KEY_DROP_AFTER "drop_after"
 
 /* User-facing API functions */
 extern Datum policy_retention_add(PG_FUNCTION_ARGS);

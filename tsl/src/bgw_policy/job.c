@@ -53,6 +53,8 @@
 #include "reorder.h"
 #include "utils.h"
 
+#include <miscadmin.h>
+#include <unistd.h>
 #define REORDER_SKIP_RECENT_DIM_SLICES_N 3
 
 static void
@@ -250,8 +252,51 @@ bool
 policy_retention_execute(int32 job_id, Jsonb *config)
 {
 	PolicyRetentionData policy_data;
+	char *relname;
+	char *string_interval;
+	Interval *interval;
+	char *message = "applying retention policy to hypertable";
+	Datum boundary;
 
 	policy_retention_read_and_validate_config(config, &policy_data);
+
+	relname = get_rel_name(policy_data.object_relid);
+	interval = ts_jsonb_get_interval_field(config, CONFIG_KEY_DROP_AFTER);
+	string_interval = DatumGetCString(DirectFunctionCall1(interval_out, IntervalPGetDatum(interval)));
+	boundary = policy_data.boundary;
+	if (IS_INTEGER_TYPE(policy_data.boundary_type))
+	{
+		elog(LOG, "%s: %s dropping data older than %ld", message, relname, 
+		DatumGetInt64(boundary));
+	}
+	switch (policy_data.boundary_type)
+	{
+		case TIMESTAMPOID:
+			elog(LOG, "%s: \"%s\" dropping data older than %s", 
+			message,
+			relname,
+			DatumGetCString(DirectFunctionCall1(timestamp_out, boundary)));
+			break;
+		case TIMESTAMPTZOID:
+			elog(LOG, "%s: \"%s\" dropping data older than %s", 
+			message,
+			relname,
+			DatumGetCString(DirectFunctionCall1(timestamptz_out, boundary)));
+			break;
+		case DATEOID:
+			elog(LOG, "%s: \"%s\" dropping data older than %s", 
+			message,
+			relname,
+			DatumGetCString(DirectFunctionCall1(date_out, boundary)));
+			break;
+		default:
+			/* this should never happen as otherwise hypertable has unsupported time type */
+			break;
+	}
+	elog(LOG, 
+		"applying retention policy on hypertable \"%s\": dropping chunks older than %s", 
+		relname,
+		string_interval);
 
 	chunk_invoke_drop_chunks(policy_data.object_relid,
 							 policy_data.boundary,
@@ -552,6 +597,23 @@ job_execute(BgwJob *job)
 	StringInfo query;
 	Portal portal = ActivePortal;
 
+	// char *interval_value;
+
+	// application name is enough to print policy name and job_id
+	// interval_value = DatumGetCString(DirectFunctionCall1(interval_out, IntervalPGetDatum(&job->fd.schedule_interval)));
+	/* 
+	 * Log some information about the job that will be executed. More specific information is printed about the various policies in their 
+	 * respective policy_execute functions.
+	 */
+// 	bool continue_sleep = true;
+//    do {
+//        sleep(1);
+//        elog(LOG, "zzzzz %d", MyProcPid);
+//    } while (continue_sleep);
+
+	elog(LOG, "Executing %s with parameters %s", 
+	NameStr(job->fd.application_name),
+	DatumGetCString(DirectFunctionCall1(jsonb_out, JsonbPGetDatum(job->fd.config))));
 	/* Create a portal if there's no active */
 	if (!PortalIsValid(portal))
 	{

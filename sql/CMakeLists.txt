@@ -5,7 +5,7 @@ include(ScriptFiles)
 # These files represent the modifications that happen in each version, excluding
 # new objects or updates to functions. We use them to build a path (update
 # script) from every historical version to the current version. Note that not
-# all of these files may exist on disk, in case they would have no contents.
+# all of these files may exist on disk, in which case they would have no contents.
 # There still needs to be an entry here to build an update script for that
 # version. Thus, for every new release, an entry should be added here.
 set(MOD_FILES
@@ -37,7 +37,7 @@ set(MOD_FILES
 # specified in version.config
 set(CURRENT_REV_FILE reverse-dev.sql)
 # Files for generating old downgrade scripts. This should only include files for
-# downgrade to from one version to its previous version since we do not support
+# downgrade from one version to its previous version since we do not support
 # skipping versions when downgrading.
 set(OLD_REV_FILES 2.3.1--2.3.0.sql 2.4.0--2.3.1.sql 2.4.1--2.4.0.sql
                   2.4.2--2.4.1.sql 2.5.0--2.4.2.sql 2.5.1--2.5.0.sql)
