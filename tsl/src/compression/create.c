@@ -923,12 +923,17 @@ disable_compression(Hypertable *ht, WithClauseResult *with_clause_options)
 }
 
 /* Add column to internal compression table */
-static void
-add_column_to_compression_table(Hypertable *compress_ht, CompressColInfo *compress_cols)
+static bool
+add_column_to_compression_table(Hypertable *compress_ht, CompressColInfo *compress_cols,
+								bool missing_ok)
 {
 	Oid compress_relid = compress_ht->main_table_relid;
 	ColumnDef *coldef;
 	AlterTableCmd *addcol_cmd;
+	HeapTuple attTuple;
+	int attnum;
+	bool skipped = false; /* postgres operates on its table first, so the column may have been
+							 skipped by postgres */
 	coldef = (ColumnDef *) linitial(compress_cols->coldeflist);
 
 	/* create altertable stmt to add column to the compressed hypertable */
@@ -936,11 +941,36 @@ add_column_to_compression_table(Hypertable *compress_ht, CompressColInfo *compre
 	addcol_cmd = makeNode(AlterTableCmd);
 	addcol_cmd->subtype = AT_AddColumn;
 	addcol_cmd->def = (Node *) coldef;
-	addcol_cmd->missing_ok = false;
+	addcol_cmd->missing_ok = missing_ok;
 
+	attTuple = SearchSysCache2(ATTNAME,
+							   ObjectIdGetDatum(compress_relid),
+							   PointerGetDatum(coldef->colname));
+	if (!HeapTupleIsValid(attTuple))
+	{
+		/* the column doesn't exist yet, so it certainly can't have been skipped */
+		skipped = false;
+	}
+
+	else
+	{
+		attnum = ((Form_pg_attribute) GETSTRUCT(attTuple))->attnum;
+		ReleaseSysCache(attTuple);
+
+		if (attnum > 0)
+		{
+			/* if missing_ok is true, and the column already exists, then it will be skipped */
+			skipped = missing_ok;
+		}
+	}
 	/* alter the table and add column */
-	AlterTableInternal(compress_relid, list_make1(addcol_cmd), true);
-	modify_compressed_toast_table_storage(compress_cols, compress_relid);
+	if (!skipped)
+	{
+		AlterTableInternal(compress_relid, list_make1(addcol_cmd), true);
+		modify_compressed_toast_table_storage(compress_cols, compress_relid);
+	}
+
+	return skipped;
 }
 
 /* Drop column from internal compression table */
@@ -1057,13 +1087,15 @@ tsl_process_compress_table(AlterTableCmd *cmd, Hypertable *ht,
  * This function specifically adds the column to the internal compression table.
  */
 void
-tsl_process_compress_table_add_column(Hypertable *ht, ColumnDef *orig_def)
+tsl_process_compress_table_add_column(Hypertable *ht, const AlterTableCmd *cmd)
 {
 	struct CompressColInfo compress_cols;
+	ColumnDef *orig_coldef = castNode(ColumnDef, cmd->def);
 	Oid coloid;
 	int32 orig_htid = ht->fd.id;
-	char *colname = orig_def->colname;
-	TypeName *orig_typname = orig_def->typeName;
+	char *colname = orig_coldef->colname;
+	TypeName *orig_typname = orig_coldef->typeName;
+	bool skipped = false;
 
 	coloid = LookupTypeNameOid(NULL, orig_typname, false);
 	compresscolinfo_init_singlecolumn(&compress_cols, colname, coloid);
@@ -1071,14 +1103,15 @@ tsl_process_compress_table_add_column(Hypertable *ht, ColumnDef *orig_def)
 	{
 		int32 compress_htid = ht->fd.compressed_hypertable_id;
 		Hypertable *compress_ht = ts_hypertable_get_by_id(compress_htid);
-		add_column_to_compression_table(compress_ht, &compress_cols);
+		skipped = add_column_to_compression_table(compress_ht, &compress_cols, cmd->missing_ok);
 	}
 	else
 	{
 		Assert(TS_HYPERTABLE_HAS_COMPRESSION_ENABLED(ht));
 	}
 	/* add catalog entries for the new column for the hypertable */
-	compresscolinfo_add_catalog_entries(&compress_cols, orig_htid);
+	if (!skipped)
+		compresscolinfo_add_catalog_entries(&compress_cols, orig_htid);
 }
 
 /* Drop a column from a table that has compression enabled

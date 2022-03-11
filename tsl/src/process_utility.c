@@ -42,8 +42,7 @@ tsl_process_altertable_cmd(Hypertable *ht, const AlterTableCmd *cmd)
 			if (TS_HYPERTABLE_HAS_COMPRESSION_TABLE(ht) ||
 				TS_HYPERTABLE_HAS_COMPRESSION_ENABLED(ht))
 			{
-				ColumnDef *orig_coldef = castNode(ColumnDef, cmd->def);
-				tsl_process_compress_table_add_column(ht, orig_coldef);
+				tsl_process_compress_table_add_column(ht, cmd);
 			}
 			break;
 		case AT_DropColumn:
