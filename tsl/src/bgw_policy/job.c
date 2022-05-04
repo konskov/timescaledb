@@ -53,6 +53,9 @@
 #include "reorder.h"
 #include "utils.h"
 
+#include <miscadmin.h>
+#include <unistd.h>
+
 #define REORDER_SKIP_RECENT_DIM_SLICES_N 3
 
 static void
@@ -334,6 +337,12 @@ policy_refresh_cagg_execute(int32 job_id, Jsonb *config)
 	PolicyContinuousAggData policy_data;
 
 	policy_refresh_cagg_read_and_validate_config(config, &policy_data);
+// 	elog(LOG, "mypid is %d, in function %s", MyProcPid, __func__);
+// 	bool continue_sleep = true;
+//    do {
+//        sleep(1);
+//        elog(LOG, "zzzzz %d", MyProcPid);
+//    } while (continue_sleep);
 	continuous_agg_refresh_internal(policy_data.cagg,
 									&policy_data.refresh_window,
 									CAGG_REFRESH_POLICY);

@@ -31,6 +31,8 @@
 #include "invalidation_threshold.h"
 #include "guc.h"
 
+#include <unistd.h>
+
 typedef struct CaggRefreshState
 {
 	ContinuousAgg cagg;
@@ -81,6 +83,24 @@ get_largest_bucketed_window(Oid timetype, int64 bucket_width)
 	maxbuckets.end = ts_time_get_end_or_max(timetype);
 
 	return maxbuckets;
+}
+
+static char * log_timestamp_internal(int elevel, const int64 int_ts, Oid type)
+{
+	Datum ts;
+	Oid outfuncid = InvalidOid;
+	bool isvarlena;
+
+	ts = ts_internal_to_time_value(int_ts, type);
+	// end_ts = ts_internal_to_time_value(refresh_window->end, refresh_window->type);
+	getTypeOutputInfo(type, &outfuncid, &isvarlena);
+	Assert(!isvarlena);
+
+	return DatumGetCString(OidFunctionCall1(outfuncid, ts));
+	// elog(elevel,
+	// 	 "%s %s",
+	// 	 msg,
+	// 	 DatumGetCString(OidFunctionCall1(outfuncid, ts)));
 }
 
 /*
@@ -269,6 +289,17 @@ continuous_agg_refresh_execute(const CaggRefreshState *refresh,
 
 	Assert(time_dim != NULL);
 
+	elog(LOG, "in function %s, my pid is %d", __func__, MyProcPid);
+	elog(LOG, "the internal refresh window is [%s to %s]",
+	DatumGetCString(DirectFunctionCall1(int8out, bucketed_refresh_window->start)),
+	DatumGetCString(DirectFunctionCall1(int8out, bucketed_refresh_window->end)));
+
+	elog(LOG, "the internal refresh window is [%s to %s]",
+	log_timestamp_internal(LOG, bucketed_refresh_window->start, 
+		bucketed_refresh_window->type),
+	log_timestamp_internal(LOG, bucketed_refresh_window->end, 
+		bucketed_refresh_window->type));
+
 	continuous_agg_update_materialization(refresh->partial_view,
 										  cagg_hypertable_name,
 										  &time_dim->fd.column_name,
@@ -298,6 +329,28 @@ log_refresh_window(int elevel, const ContinuousAgg *cagg, const InternalTimeRang
 		 DatumGetCString(OidFunctionCall1(outfuncid, start_ts)),
 		 DatumGetCString(OidFunctionCall1(outfuncid, end_ts)));
 }
+
+// static void
+// log_refresh_window_konskov(int elevel, const ContinuousAgg *cagg, const InternalTimeRange *refresh_window,
+// 				   const char *msg)
+// {
+// 	Datum start_ts;
+// 	Datum end_ts;
+// 	Oid outfuncid = InvalidOid;
+// 	bool isvarlena;
+
+// 	start_ts = ts_internal_to_time_value(refresh_window->start, refresh_window->type);
+// 	end_ts = ts_internal_to_time_value(refresh_window->end, refresh_window->type);
+// 	getTypeOutputInfo(refresh_window->type, &outfuncid, &isvarlena);
+// 	Assert(!isvarlena);
+
+// 	elog(elevel,
+// 		 "%s \"%s\" in window [ %s, %s ]",
+// 		 msg,
+// 		 NameStr(cagg->data.user_view_name),
+// 		 DatumGetCString(OidFunctionCall1(outfuncid, start_ts)),
+// 		 DatumGetCString(OidFunctionCall1(outfuncid, end_ts)));
+// }
 
 /*
  * Get the limit on number of invalidation-based refreshes we allow per
@@ -471,6 +524,17 @@ continuous_agg_refresh_with_window(const ContinuousAgg *cagg,
 
 	continuous_agg_refresh_init(&refresh, cagg, refresh_window);
 
+	elog(LOG, "in function %s, my pid is %d", __func__, MyProcPid);
+	elog(LOG, "the refresh window is [%s to %s]",
+	DatumGetCString(DirectFunctionCall1(int8out, refresh_window->start)),
+	DatumGetCString(DirectFunctionCall1(int8out, refresh_window->end)));
+
+	elog(LOG, "the refresh window is [%s to %s]",
+	log_timestamp_internal(LOG, refresh_window->start, 
+		refresh_window->type),
+	log_timestamp_internal(LOG, refresh_window->end, 
+		refresh_window->type));
+
 	/* Disable per-data-node optimization so that 'tableoid' system column is evaluated in the
 	 * Access Node to generate Access Node chunk-IDs for the materialization table. */
 	ts_guc_enable_per_data_node_queries = false;
@@ -542,6 +606,12 @@ continuous_agg_refresh(PG_FUNCTION_ARGS)
 	InternalTimeRange refresh_window = {
 		.type = InvalidOid,
 	};
+// 	elog(LOG, "mypid is %d, in function %s", MyProcPid, __func__);
+// 	bool continue_sleep = true;
+//    do {
+//        sleep(1);
+//        elog(LOG, "zzzzz %d", MyProcPid);
+//    } while (continue_sleep);
 
 	cagg = get_cagg_by_relid(cagg_relid);
 	refresh_window.type = cagg->partition_type;
@@ -625,6 +695,17 @@ process_cagg_invalidations_and_refresh(const ContinuousAgg *cagg,
 	const CaggsInfo all_caggs_info =
 		ts_continuous_agg_get_all_caggs_info(cagg->data.raw_hypertable_id);
 	max_materializations = materialization_per_refresh_window();
+
+	elog(LOG, "in %s, the refresh window is [%s to %s]", __func__,
+	DatumGetCString(DirectFunctionCall1(int8out, refresh_window->start)),
+	DatumGetCString(DirectFunctionCall1(int8out, refresh_window->end)));
+
+	elog(LOG, "in %s, the refresh window is [%s to %s]",
+	__func__,
+	log_timestamp_internal(LOG, refresh_window->start, 
+		refresh_window->type),
+	log_timestamp_internal(LOG, refresh_window->end, 
+		refresh_window->type));
 	if (is_raw_ht_distributed)
 	{
 		invalidations = NULL;
@@ -686,6 +767,9 @@ continuous_agg_refresh_internal(const ContinuousAgg *cagg,
 								const InternalTimeRange *refresh_window_arg,
 								const CaggRefreshCallContext callctx)
 {
+	elog(LOG,"im in %s and refresh_window_arg is (next line)", __func__);
+	log_refresh_window(LOG, cagg, refresh_window_arg, "refreshing cagg, refresh_window_arg");
+	
 	Catalog *catalog = ts_catalog_get();
 	int32 mat_id = cagg->data.mat_hypertable_id;
 	InternalTimeRange refresh_window;
@@ -720,6 +804,7 @@ continuous_agg_refresh_internal(const ContinuousAgg *cagg,
 
 	if (ts_continuous_agg_bucket_width_variable(cagg))
 	{
+		elog(LOG, "variable time bucket");
 		refresh_window = *refresh_window_arg;
 		ts_compute_inscribed_bucketed_refresh_window_variable(&refresh_window.start,
 															  &refresh_window.end,
@@ -727,6 +812,7 @@ continuous_agg_refresh_internal(const ContinuousAgg *cagg,
 	}
 	else
 	{
+		elog(LOG, "not variable time buckt");
 		refresh_window =
 			compute_inscribed_bucketed_refresh_window(refresh_window_arg,
 													  ts_continuous_agg_bucket_width(cagg));
@@ -767,19 +853,28 @@ continuous_agg_refresh_internal(const ContinuousAgg *cagg,
 	/* Compute new invalidation threshold. Note that this computation caps the
 	 * threshold at the end of the last bucket that holds data in the
 	 * underlying hypertable. */
+	// is this the correct threshold?
 	computed_invalidation_threshold = invalidation_threshold_compute(cagg, &refresh_window);
+	elog(LOG, "mypid is %d and computed_invalidation_threshold is %s or %s", MyProcPid, 
+	DatumGetCString(DirectFunctionCall1(int8out, computed_invalidation_threshold)),
+	log_timestamp_internal(LOG, computed_invalidation_threshold, refresh_window.type));
 
 	/* Set the new invalidation threshold. Note that this only updates the
 	 * threshold if the new value is greater than the old one. Otherwise, the
 	 * existing threshold is returned. */
 	invalidation_threshold = invalidation_threshold_set_or_get(cagg->data.raw_hypertable_id,
 															   computed_invalidation_threshold);
+	elog(LOG, "mypid is %d and the new invalidation_threshold is %s or %s", MyProcPid, 
+	DatumGetCString(DirectFunctionCall1(int8out, invalidation_threshold)),
+	log_timestamp_internal(LOG, invalidation_threshold, refresh_window.type));
 
 	/* We must also cap the refresh window at the invalidation threshold. If
 	 * we process invalidations after the threshold, the continuous aggregates
 	 * won't be refreshed when the threshold is moved forward in the
 	 * future. The invalidation threshold should already be aligned on bucket
 	 * boundary. */
+	// and it is, aligned for bucket boundary, but it's aligned for 
+	// the 1-day bucket
 	if (refresh_window_arg->end > invalidation_threshold)
 		refresh_window.end = invalidation_threshold;
 
@@ -846,6 +941,12 @@ continuous_agg_refresh_chunk(PG_FUNCTION_ARGS)
 		.start = ts_chunk_primary_dimension_start(chunk),
 		.end = ts_chunk_primary_dimension_end(chunk),
 	};
+
+	elog(LOG, "in %s, the refresh window is [%s to %s] or [%s to %s]", __func__,
+	DatumGetCString(DirectFunctionCall1(int8out, refresh_window.start)),
+	DatumGetCString(DirectFunctionCall1(int8out, refresh_window.end)),
+	log_timestamp_internal(LOG, refresh_window.start, refresh_window.type),
+	log_timestamp_internal(LOG, refresh_window.end, refresh_window.type));
 
 	/* Like regular materialized views, require owner to refresh. */
 	if (!pg_class_ownercheck(cagg->relid, GetUserId()))

@@ -741,7 +741,7 @@ cut_and_insert_new_cagg_invalidation(const CaggInvalidationState *state, const I
 	CatalogSecurityContext sec_ctx;
 	TupleDesc tupdesc = RelationGetDescr(state->cagg_log_rel);
 	HeapTuple newtup;
-
+	elog(LOG, "in function %s, pid %d", __func__, MyProcPid);
 	newtup = create_invalidation_tup(tupdesc,
 									 cagg_hyper_id,
 									 entry->lowest_modified_value,
@@ -772,6 +772,8 @@ move_invalidations_from_hyper_to_cagg_log(const CaggInvalidationState *state)
 	int32 hyper_id = state->raw_hypertable_id;
 	int32 last_cagg_hyper_id;
 	ListCell *lc1, *lc2, *lc3;
+
+	elog(LOG, "in function %s", __func__);
 
 	last_cagg_hyper_id = llast_int(all_caggs->mat_hypertable_ids);
 
@@ -1039,6 +1041,7 @@ invalidation_state_init(CaggInvalidationState *state, int32 mat_hypertable_id,
 	state->raw_hypertable_id = raw_hypertable_id;
 	state->dimtype = dimtype;
 	state->all_caggs = all_caggs;
+	// where do we close this table? CONTINUOUS_AGGS_MATERIALIZATION_INVALIDATION_LOG by the way
 	state->cagg_log_rel = open_invalidation_log(LOG_CAGG, RowExclusiveLock);
 	state->per_tuple_mctx = AllocSetContextCreate(CurrentMemoryContext,
 												  "Continuous aggregate invalidations",
@@ -1078,7 +1081,7 @@ invalidation_process_hypertable_log(int32 mat_hypertable_id, int32 raw_hypertabl
 									const CaggsInfo *all_caggs)
 {
 	CaggInvalidationState state;
-
+	elog(LOG, "in function %s", __func__);
 	invalidation_state_init(&state, mat_hypertable_id, raw_hypertable_id, dimtype, all_caggs);
 	move_invalidations_from_hyper_to_cagg_log(&state);
 	invalidation_state_cleanup(&state);
@@ -1227,7 +1230,7 @@ invalidation_process_cagg_log(int32 mat_hypertable_id, int32 raw_hypertable_id,
 	CaggInvalidationState state;
 	InvalidationStore *store = NULL;
 	long count;
-
+	elog(LOG, "in function %s, pid is %d", __func__, MyProcPid);
 	*do_merged_refresh = false;
 
 	invalidation_state_init(&state,

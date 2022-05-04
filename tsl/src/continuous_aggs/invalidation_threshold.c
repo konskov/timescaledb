@@ -115,6 +115,7 @@ scan_update_invalidation_threshold(TupleInfo *ti, void *data)
  * On success, the new threshold is returned, otherwise the existing threshold
  * is returned instead.
  */
+// this is computed wrong the second time
 int64
 invalidation_threshold_set_or_get(int32 raw_hypertable_id, int64 invalidation_threshold)
 {
@@ -152,6 +153,7 @@ invalidation_threshold_set_or_get(int32 raw_hypertable_id, int64 invalidation_th
 
 	if (!threshold_found)
 	{
+		elog(LOG, "mypid is ?maybe see above? and I did not find a threshold in function %s", __func__);
 		Catalog *catalog = ts_catalog_get();
 		/* NOTE: this function deliberately takes a stronger lock than RowExclusive, see the comment
 		 * above for the rationale
@@ -171,6 +173,8 @@ invalidation_threshold_set_or_get(int32 raw_hypertable_id, int64 invalidation_th
 		ts_catalog_insert_values(rel, desc, values, nulls);
 		table_close(rel, NoLock);
 	}
+	else
+		elog(LOG, "I found a threshold! in %s", __func__);
 
 	return data.threshold;
 }

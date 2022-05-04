@@ -21,6 +21,9 @@
 
 #include "materialize.h"
 
+#include <miscadmin.h>
+#include <unistd.h>
+
 static bool ranges_overlap(InternalTimeRange invalidation_range,
 						   InternalTimeRange new_materialization_range);
 static TimeRange internal_time_range_to_time_range(InternalTimeRange internal);
@@ -58,6 +61,13 @@ continuous_agg_update_materialization(SchemaAndName partial_view,
 	int res = SPI_connect();
 	if (res != SPI_OK_CONNECT)
 		elog(ERROR, "could not connect to SPI in materializer");
+	elog(LOG, "in function %s with pid %d", __func__, MyProcPid);
+
+// 	bool continue_sleep = true;
+//    do {
+//        sleep(1);
+//        elog(LOG, "zzzzz %d", MyProcPid);
+//    } while (continue_sleep);
 
 	/* pin the start of new_materialization to the end of new_materialization,
 	 * we are not allowed to materialize beyond that point

@@ -1,0 +1,702 @@
+2022-05-04 13:41:16.615 EEST [36405] DEBUG:  autovacuum: processing database "postgres"
+2022-05-04 13:41:19.056 EEST [36380] DEBUG:  building index "pg_toast_22233_index" on table "pg_toast_22233" serially
+2022-05-04 13:41:19.060 EEST [36380] DEBUG:  rehashing catalog cache id 32 for pg_index; 129 tups, 64 buckets
+2022-05-04 13:41:19.060 EEST [36380] DEBUG:  building index "_materialized_hypertable_13_bucket_idx" on table "_materialized_hypertable_13" serially
+2022-05-04 13:41:19.061 EEST [36380] DEBUG:  index "_materialized_hypertable_13_bucket_idx" can safely use deduplication
+2022-05-04 13:41:19.081 EEST [36380] DEBUG:  building index "pg_toast_22263_index" on table "pg_toast_22263" serially
+2022-05-04 13:41:19.083 EEST [36380] DEBUG:  building index "_materialized_hypertable_14_bucket_idx" on table "_materialized_hypertable_14" serially
+2022-05-04 13:41:19.083 EEST [36380] DEBUG:  index "_materialized_hypertable_14_bucket_idx" can safely use deduplication
+2022-05-04 13:41:22.662 EEST [36183] DEBUG:  launching job 1010 "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:41:22.662 EEST [36174] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:41:22.662 EEST [36174] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:41:22.684 EEST [36417] DEBUG:  started background job 1010
+2022-05-04 13:41:22.699 EEST [36417] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 13}
+2022-05-04 13:41:22.700 EEST [36417] LOG:  im in continuous_agg_refresh_internal and my pid is 36417
+2022-05-04 13:41:22.700 EEST [36417] LOG:  not variable time buckt
+2022-05-04 13:41:22.700 EEST [36417] LOG:  refreshing continuous aggregate "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-04 13:41:22.700 EEST [36417] LOG:  mypid is 36417 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-04 13:41:22.700 EEST [36417] LOG:  mypid is ?maybe see above? and I did not find a threshold in function invalidation_threshold_set_or_get
+2022-05-04 13:41:22.700 EEST [36417] LOG:  mypid is 36417 and the new invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-04 13:41:22.701 EEST [36417] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 13:41:22.701 EEST [36417] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 13:41:22.701 EEST [36417] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650844800000000 to 1651449600000000]
+2022-05-04 13:41:22.701 EEST [36417] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-04 13:41:22.701 EEST [36417] LOG:  in function invalidation_process_cagg_log, pid is 36417
+2022-05-04 13:41:22.702 EEST [36417] LOG:  in function continuous_agg_refresh_with_window, my pid is 36417
+2022-05-04 13:41:22.702 EEST [36417] LOG:  the refresh window is [1650844800000000 to 1651449600000000]
+2022-05-04 13:41:22.702 EEST [36417] LOG:  the refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-04 13:41:22.702 EEST [36417] DEBUG:  invalidation refresh on "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-04 13:41:22.702 EEST [36417] LOG:  in function continuous_agg_refresh_execute, my pid is 36417
+2022-05-04 13:41:22.702 EEST [36417] LOG:  the internal refresh window is [1650844800000000 to 1651449600000000]
+2022-05-04 13:41:22.702 EEST [36417] LOG:  the internal refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-04 13:41:22.702 EEST [36417] LOG:  in function continuous_agg_update_materialization with pid 36417
+2022-05-04 13:41:22.702 EEST [36417] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-04 13:41:22.702 EEST [36417] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_13 AS D WHERE D.bucket >= '2022-04-25 03:00:00+03' AND D.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 13:41:23.912 EEST [36417] DEBUG:  building index "pg_toast_22283_index" on table "pg_toast_22283" serially
+2022-05-04 13:41:23.912 EEST [36417] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 13:41:23.930 EEST [36417] DEBUG:  verifying table "_hyper_13_43_chunk"
+2022-05-04 13:41:23.930 EEST [36417] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_13_43_chunk ADD CONSTRAINT constraint_43 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 13:41:23.930 EEST [36417] DEBUG:  EventTriggerInvoke 21536
+2022-05-04 13:41:23.930 EEST [36417] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_13_43_chunk ADD CONSTRAINT constraint_43 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 13:41:23.930 EEST [36417] DEBUG:  building index "_hyper_13_43_chunk__materialized_hypertable_13_bucket_idx" on table "_hyper_13_43_chunk" serially
+2022-05-04 13:41:23.930 EEST [36417] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 13:41:23.930 EEST [36417] DEBUG:  index "_hyper_13_43_chunk__materialized_hypertable_13_bucket_idx" can safely use deduplication
+2022-05-04 13:41:23.930 EEST [36417] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 13:41:24.122 EEST [36417] DEBUG:  exiting job 1010 with success
+2022-05-04 13:41:24.134 EEST [36174] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:41:24.134 EEST [36174] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1010]" (PID 36417) exited with exit code 0
+2022-05-04 13:41:34.138 EEST [36183] DEBUG:  launching job 1011 "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:41:34.138 EEST [36174] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:41:34.138 EEST [36174] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:41:34.171 EEST [36422] DEBUG:  started background job 1011
+2022-05-04 13:41:34.179 EEST [36422] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 14}
+2022-05-04 13:41:34.180 EEST [36422] LOG:  im in continuous_agg_refresh_internal and my pid is 36422
+2022-05-04 13:41:34.180 EEST [36422] LOG:  not variable time buckt
+2022-05-04 13:41:34.180 EEST [36422] LOG:  refreshing continuous aggregate "deals_best_daily" in window [ 2022-04-20 03:00:00+03, 2022-05-03 03:00:00+03 ]
+2022-05-04 13:41:34.180 EEST [36422] LOG:  mypid is 36422 and computed_invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 13:41:34.181 EEST [36422] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-04 13:41:34.181 EEST [36422] LOG:  mypid is 36422 and the new invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 13:41:34.181 EEST [36422] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 13:41:34.181 EEST [36422] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 13:41:34.182 EEST [36422] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 13:41:34.182 EEST [36422] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:41:34.182 EEST [36422] LOG:  in function invalidation_process_cagg_log, pid is 36422
+2022-05-04 13:41:34.182 EEST [36422] LOG:  in function continuous_agg_refresh_with_window, my pid is 36422
+2022-05-04 13:41:34.182 EEST [36422] LOG:  the refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 13:41:34.182 EEST [36422] LOG:  the refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:41:34.182 EEST [36422] DEBUG:  invalidation refresh on "deals_best_daily" in window [ 2022-04-20 03:00:00+03, 2022-05-03 03:00:00+03 ]
+2022-05-04 13:41:34.182 EEST [36422] LOG:  in function continuous_agg_refresh_execute, my pid is 36422
+2022-05-04 13:41:34.182 EEST [36422] LOG:  the internal refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 13:41:34.182 EEST [36422] LOG:  the internal refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:41:34.182 EEST [36422] LOG:  in function continuous_agg_update_materialization with pid 36422
+2022-05-04 13:41:34.182 EEST [36422] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-04 13:41:34.182 EEST [36422] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_14 AS D WHERE D.bucket >= '2022-04-20 03:00:00+03' AND D.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.465 EEST [36422] DEBUG:  building index "pg_toast_22290_index" on table "pg_toast_22290" serially
+2022-05-04 13:41:35.465 EEST [36422] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.473 EEST [36422] DEBUG:  verifying table "_hyper_14_44_chunk"
+2022-05-04 13:41:35.473 EEST [36422] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_14_44_chunk ADD CONSTRAINT constraint_44 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.473 EEST [36422] DEBUG:  EventTriggerInvoke 21536
+2022-05-04 13:41:35.473 EEST [36422] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_14_44_chunk ADD CONSTRAINT constraint_44 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.473 EEST [36422] DEBUG:  building index "_hyper_14_44_chunk__materialized_hypertable_14_bucket_idx" on table "_hyper_14_44_chunk" serially
+2022-05-04 13:41:35.473 EEST [36422] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.473 EEST [36422] DEBUG:  index "_hyper_14_44_chunk__materialized_hypertable_14_bucket_idx" can safely use deduplication
+2022-05-04 13:41:35.473 EEST [36422] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.475 EEST [36422] DEBUG:  building index "pg_toast_22297_index" on table "pg_toast_22297" serially
+2022-05-04 13:41:35.475 EEST [36422] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.476 EEST [36422] DEBUG:  verifying table "_hyper_14_45_chunk"
+2022-05-04 13:41:35.476 EEST [36422] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_14_45_chunk ADD CONSTRAINT constraint_45 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.476 EEST [36422] DEBUG:  EventTriggerInvoke 21536
+2022-05-04 13:41:35.476 EEST [36422] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_14_45_chunk ADD CONSTRAINT constraint_45 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.477 EEST [36422] DEBUG:  building index "_hyper_14_45_chunk__materialized_hypertable_14_bucket_idx" on table "_hyper_14_45_chunk" serially
+2022-05-04 13:41:35.477 EEST [36422] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.477 EEST [36422] DEBUG:  index "_hyper_14_45_chunk__materialized_hypertable_14_bucket_idx" can safely use deduplication
+2022-05-04 13:41:35.477 EEST [36422] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_14 SELECT * FROM _timescaledb_internal._partial_view_14 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 13:41:35.478 EEST [36422] DEBUG:  exiting job 1011 with success
+2022-05-04 13:41:35.487 EEST [36174] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:41:35.487 EEST [36174] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1011]" (PID 36422) exited with exit code 0
+2022-05-04 13:41:46.612 EEST [36429] DEBUG:  autovacuum: processing database "repro298"
+2022-05-04 13:42:16.607 EEST [36439] DEBUG:  autovacuum: processing database "postgres"
+2022-05-04 13:42:24.125 EEST [36183] DEBUG:  launching job 1010 "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:42:24.126 EEST [36174] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:42:24.126 EEST [36174] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:42:24.169 EEST [36443] DEBUG:  started background job 1010
+2022-05-04 13:42:24.177 EEST [36443] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 13}
+2022-05-04 13:42:24.179 EEST [36443] LOG:  im in continuous_agg_refresh_internal and my pid is 36443
+2022-05-04 13:42:24.179 EEST [36443] LOG:  not variable time buckt
+2022-05-04 13:42:24.179 EEST [36443] LOG:  refreshing continuous aggregate "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-04 13:42:24.179 EEST [36443] LOG:  mypid is 36443 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-04 13:42:24.179 EEST [36443] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651536000000000 1651449600000000
+2022-05-04 13:42:24.179 EEST [36443] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-04 13:42:24.179 EEST [36443] LOG:  mypid is 36443 and the new invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 13:42:24.179 EEST [36443] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 13:42:24.179 EEST [36443] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 13:42:24.181 EEST [36443] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650844800000000 to 1651536000000000]
+2022-05-04 13:42:24.181 EEST [36443] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-25 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:42:24.181 EEST [36443] LOG:  in function invalidation_process_cagg_log, pid is 36443
+2022-05-04 13:42:24.181 EEST [36443] LOG:  in function continuous_agg_refresh_with_window, my pid is 36443
+2022-05-04 13:42:24.181 EEST [36443] LOG:  the refresh window is [1650844800000000 to 1651536000000000]
+2022-05-04 13:42:24.181 EEST [36443] LOG:  the refresh window is [2022-04-25 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:42:24.181 EEST [36443] DEBUG:  invalidation refresh on "deals_best_weekly" in window [ 2022-05-02 03:00:00+03, 2022-05-09 03:00:00+03 ]
+2022-05-04 13:42:24.181 EEST [36443] LOG:  in function continuous_agg_refresh_execute, my pid is 36443
+2022-05-04 13:42:24.181 EEST [36443] LOG:  the internal refresh window is [1651449600000000 to 1652054400000000]
+2022-05-04 13:42:24.181 EEST [36443] LOG:  the internal refresh window is [2022-05-02 03:00:00+03 to 2022-05-09 03:00:00+03]
+2022-05-04 13:42:24.181 EEST [36443] LOG:  in function continuous_agg_update_materialization with pid 36443
+2022-05-04 13:42:24.181 EEST [36443] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-04 13:42:24.181 EEST [36443] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_13 AS D WHERE D.bucket >= '2022-05-02 03:00:00+03' AND D.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 13:42:24.425 EEST [36443] DEBUG:  building index "pg_toast_22304_index" on table "pg_toast_22304" serially
+2022-05-04 13:42:24.425 EEST [36443] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 13:42:24.434 EEST [36443] DEBUG:  verifying table "_hyper_13_46_chunk"
+2022-05-04 13:42:24.434 EEST [36443] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_13_46_chunk ADD CONSTRAINT constraint_46 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 13:42:24.434 EEST [36443] DEBUG:  EventTriggerInvoke 21536
+2022-05-04 13:42:24.434 EEST [36443] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_13_46_chunk ADD CONSTRAINT constraint_46 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 13:42:24.435 EEST [36443] DEBUG:  building index "_hyper_13_46_chunk__materialized_hypertable_13_bucket_idx" on table "_hyper_13_46_chunk" serially
+2022-05-04 13:42:24.435 EEST [36443] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 13:42:24.435 EEST [36443] DEBUG:  index "_hyper_13_46_chunk__materialized_hypertable_13_bucket_idx" can safely use deduplication
+2022-05-04 13:42:24.435 EEST [36443] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_13 SELECT * FROM _timescaledb_internal._partial_view_13 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 13:42:24.436 EEST [36443] DEBUG:  exiting job 1010 with success
+2022-05-04 13:42:24.446 EEST [36174] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:42:24.446 EEST [36174] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1010]" (PID 36443) exited with exit code 0
+2022-05-04 13:42:35.481 EEST [36183] DEBUG:  launching job 1011 "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:42:35.481 EEST [36174] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:42:35.481 EEST [36174] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:42:35.526 EEST [36448] DEBUG:  started background job 1011
+2022-05-04 13:42:35.533 EEST [36448] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 14}
+2022-05-04 13:42:35.535 EEST [36448] LOG:  im in continuous_agg_refresh_internal and my pid is 36448
+2022-05-04 13:42:35.535 EEST [36448] LOG:  not variable time buckt
+2022-05-04 13:42:35.535 EEST [36448] LOG:  refreshing continuous aggregate "deals_best_daily" in window [ 2022-04-20 03:00:00+03, 2022-05-03 03:00:00+03 ]
+2022-05-04 13:42:35.535 EEST [36448] LOG:  mypid is 36448 and computed_invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 13:42:35.535 EEST [36448] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651536000000000 1651536000000000
+2022-05-04 13:42:35.535 EEST [36448] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-04 13:42:35.535 EEST [36448] LOG:  mypid is 36448 and the new invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 13:42:35.535 EEST [36448] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 13:42:35.535 EEST [36448] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 13:42:35.536 EEST [36448] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 13:42:35.536 EEST [36448] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:42:35.536 EEST [36448] LOG:  in function invalidation_process_cagg_log, pid is 36448
+2022-05-04 13:42:35.537 EEST [36448] DEBUG:  exiting job 1011 with success
+2022-05-04 13:42:35.547 EEST [36174] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:42:35.547 EEST [36174] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1011]" (PID 36448) exited with exit code 0
+2022-05-04 13:42:46.625 EEST [36460] DEBUG:  autovacuum: processing database "repro298"
+2022-05-04 13:43:16.622 EEST [36471] DEBUG:  autovacuum: processing database "postgres"
+2022-05-04 13:43:24.440 EEST [36183] DEBUG:  launching job 1010 "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:43:24.440 EEST [36174] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:43:24.441 EEST [36174] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:43:24.482 EEST [36477] DEBUG:  started background job 1010
+2022-05-04 13:43:24.502 EEST [36477] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 13}
+2022-05-04 13:43:24.503 EEST [36477] LOG:  im in continuous_agg_refresh_internal and my pid is 36477
+2022-05-04 13:43:24.503 EEST [36477] LOG:  not variable time buckt
+2022-05-04 13:43:24.503 EEST [36477] LOG:  refreshing continuous aggregate "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-04 13:43:24.503 EEST [36477] LOG:  mypid is 36477 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-04 13:43:24.503 EEST [36477] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651536000000000 1651449600000000
+2022-05-04 13:43:24.503 EEST [36477] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-04 13:43:24.503 EEST [36477] LOG:  mypid is 36477 and the new invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 13:43:24.504 EEST [36477] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 13:43:24.504 EEST [36477] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 13:43:24.504 EEST [36477] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650844800000000 to 1651536000000000]
+2022-05-04 13:43:24.504 EEST [36477] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-25 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:43:24.504 EEST [36477] LOG:  in function invalidation_process_cagg_log, pid is 36477
+2022-05-04 13:43:24.505 EEST [36477] LOG:  in function continuous_agg_refresh_with_window, my pid is 36477
+2022-05-04 13:43:24.507 EEST [36477] LOG:  the refresh window is [1650844800000000 to 1651536000000000]
+2022-05-04 13:43:24.508 EEST [36477] LOG:  the refresh window is [2022-04-25 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:43:24.509 EEST [36477] DEBUG:  invalidation refresh on "deals_best_weekly" in window [ 2022-05-02 03:00:00+03, 2022-05-09 03:00:00+03 ]
+2022-05-04 13:43:24.509 EEST [36477] LOG:  in function continuous_agg_refresh_execute, my pid is 36477
+2022-05-04 13:43:24.509 EEST [36477] LOG:  the internal refresh window is [1651449600000000 to 1652054400000000]
+2022-05-04 13:43:24.509 EEST [36477] LOG:  the internal refresh window is [2022-05-02 03:00:00+03 to 2022-05-09 03:00:00+03]
+2022-05-04 13:43:24.509 EEST [36477] LOG:  in function continuous_agg_update_materialization with pid 36477
+2022-05-04 13:43:24.509 EEST [36477] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-04 13:43:24.509 EEST [36477] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_13 AS D WHERE D.bucket >= '2022-05-02 03:00:00+03' AND D.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 13:43:24.765 EEST [36477] DEBUG:  exiting job 1010 with success
+2022-05-04 13:43:24.775 EEST [36174] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1010]"
+2022-05-04 13:43:24.775 EEST [36174] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1010]" (PID 36477) exited with exit code 0
+2022-05-04 13:43:35.537 EEST [36183] DEBUG:  launching job 1011 "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:43:35.537 EEST [36174] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:43:35.537 EEST [36174] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:43:35.558 EEST [36483] DEBUG:  started background job 1011
+2022-05-04 13:43:35.570 EEST [36483] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 14}
+2022-05-04 13:43:35.571 EEST [36483] LOG:  im in continuous_agg_refresh_internal and my pid is 36483
+2022-05-04 13:43:35.571 EEST [36483] LOG:  not variable time buckt
+2022-05-04 13:43:35.571 EEST [36483] LOG:  refreshing continuous aggregate "deals_best_daily" in window [ 2022-04-20 03:00:00+03, 2022-05-03 03:00:00+03 ]
+2022-05-04 13:43:35.572 EEST [36483] LOG:  mypid is 36483 and computed_invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 13:43:35.572 EEST [36483] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651536000000000 1651536000000000
+2022-05-04 13:43:35.573 EEST [36483] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-04 13:43:35.573 EEST [36483] LOG:  mypid is 36483 and the new invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 13:43:35.573 EEST [36483] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 13:43:35.573 EEST [36483] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 13:43:35.574 EEST [36483] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 13:43:35.574 EEST [36483] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 13:43:35.574 EEST [36483] LOG:  in function invalidation_process_cagg_log, pid is 36483
+2022-05-04 13:43:35.576 EEST [36483] DEBUG:  exiting job 1011 with success
+2022-05-04 13:43:35.585 EEST [36174] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1011]"
+2022-05-04 13:43:35.585 EEST [36174] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1011]" (PID 36483) exited with exit code 0
+2022-05-04 13:43:40.109 EEST [36380] ERROR:  canceling statement due to user request
+2022-05-04 13:43:40.109 EEST [36380] STATEMENT:  select * from sensor_data order by time;
+2022-05-04 13:43:46.623 EEST [36489] DEBUG:  autovacuum: processing database "repro298"
+2022-05-04 13:44:06.599 EEST [36174] LOG:  received fast shutdown request
+2022-05-04 13:44:06.599 EEST [36174] LOG:  aborting any active transactions
+terminating TimescaleDB job scheduler due to administrator command
+2022-05-04 13:44:06.599 EEST [36179] DEBUG:  autovacuum launcher shutting down
+terminating TimescaleDB background worker launcher due to administrator command
+2022-05-04 13:44:06.600 EEST [36380] FATAL:  terminating connection due to administrator command
+2022-05-04 13:44:06.600 EEST [36183] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2022-05-04 13:44:06.600 EEST [36182] DEBUG:  logical replication launcher shutting down
+2022-05-04 13:44:06.600 EEST [36181] FATAL:  terminating background worker "TimescaleDB Background Worker Launcher" due to administrator command
+terminating TimescaleDB job scheduler due to administrator command
+2022-05-04 13:44:06.853 EEST [36174] LOG:  background worker "logical replication launcher" (PID 36182) exited with exit code 1
+2022-05-04 13:44:06.871 EEST [36174] DEBUG:  unregistering background worker "TimescaleDB Background Worker Scheduler"
+2022-05-04 13:44:06.871 EEST [36174] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 36183) exited with exit code 1
+2022-05-04 13:44:06.878 EEST [36174] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 36181) exited with exit code 1
+2022-05-04 13:44:06.881 EEST [36176] LOG:  shutting down
+2022-05-04 13:44:06.881 EEST [36176] DEBUG:  performing replication slot checkpoint
+2022-05-04 13:44:06.909 EEST [36174] LOG:  database system is shut down
+
+
+-------------------------- now in this log I will execute on a Tuesday, expect to see no weird results ------------------------------
+SET THE DATE TO Tuesday2022-05-04 13:45:50.714 EEST [36981] DEBUG:  autovacuum: processing database "postgres"
+2022-05-03 13:46:13.904 EEST [36794] DEBUG:  launching job 1012 "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:46:13.904 EEST [36785] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:46:13.904 EEST [36785] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:46:13.943 EEST [36999] DEBUG:  started background job 1012
+2022-05-03 13:46:13.961 EEST [36999] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 15}
+2022-05-03 13:46:13.963 EEST [36999] LOG:  im in continuous_agg_refresh_internal and my pid is 36999
+2022-05-03 13:46:13.963 EEST [36999] LOG:  not variable time buckt
+2022-05-03 13:46:13.963 EEST [36999] LOG:  refreshing continuous aggregate "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-03 13:46:13.963 EEST [36999] LOG:  mypid is 36999 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:46:13.963 EEST [36999] LOG:  mypid is ?maybe see above? and I did not find a threshold in function invalidation_threshold_set_or_get
+2022-05-03 13:46:13.963 EEST [36999] LOG:  mypid is 36999 and the new invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:46:13.963 EEST [36999] LOG:  in function invalidation_process_hypertable_log
+2022-05-03 13:46:13.963 EEST [36999] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-03 13:46:13.964 EEST [36999] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650844800000000 to 1651449600000000]
+2022-05-03 13:46:13.964 EEST [36999] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:46:13.964 EEST [36999] LOG:  in function invalidation_process_cagg_log, pid is 36999
+2022-05-03 13:46:13.964 EEST [36999] LOG:  in function continuous_agg_refresh_with_window, my pid is 36999
+2022-05-03 13:46:13.964 EEST [36999] LOG:  the refresh window is [1650844800000000 to 1651449600000000]
+2022-05-03 13:46:13.964 EEST [36999] LOG:  the refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:46:13.964 EEST [36999] DEBUG:  invalidation refresh on "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-03 13:46:13.964 EEST [36999] LOG:  in function continuous_agg_refresh_execute, my pid is 36999
+2022-05-03 13:46:13.964 EEST [36999] LOG:  the internal refresh window is [1650844800000000 to 1651449600000000]
+2022-05-03 13:46:13.964 EEST [36999] LOG:  the internal refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:46:13.964 EEST [36999] LOG:  in function continuous_agg_update_materialization with pid 36999
+2022-05-03 13:46:13.964 EEST [36999] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-03 13:46:13.964 EEST [36999] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_15 AS D WHERE D.bucket >= '2022-04-25 03:00:00+03' AND D.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:15.134 EEST [36999] DEBUG:  building index "pg_toast_22361_index" on table "pg_toast_22361" serially
+2022-05-03 13:46:15.134 EEST [36999] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_15 SELECT * FROM _timescaledb_internal._partial_view_15 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:15.150 EEST [36999] DEBUG:  verifying table "_hyper_15_47_chunk"
+2022-05-03 13:46:15.150 EEST [36999] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_15_47_chunk ADD CONSTRAINT constraint_47 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_15 SELECT * FROM _timescaledb_internal._partial_view_15 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:15.150 EEST [36999] DEBUG:  EventTriggerInvoke 21536
+2022-05-03 13:46:15.150 EEST [36999] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_15_47_chunk ADD CONSTRAINT constraint_47 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_15 SELECT * FROM _timescaledb_internal._partial_view_15 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:15.151 EEST [36999] DEBUG:  building index "_hyper_15_47_chunk__materialized_hypertable_15_bucket_idx" on table "_hyper_15_47_chunk" serially
+2022-05-03 13:46:15.151 EEST [36999] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_15 SELECT * FROM _timescaledb_internal._partial_view_15 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:15.151 EEST [36999] DEBUG:  index "_hyper_15_47_chunk__materialized_hypertable_15_bucket_idx" can safely use deduplication
+2022-05-03 13:46:15.151 EEST [36999] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_15 SELECT * FROM _timescaledb_internal._partial_view_15 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:15.343 EEST [36999] DEBUG:  exiting job 1012 with success
+2022-05-03 13:46:15.355 EEST [36785] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:46:15.355 EEST [36785] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1012]" (PID 36999) exited with exit code 0
+2022-05-03 13:46:25.353 EEST [36794] DEBUG:  launching job 1013 "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:46:25.353 EEST [36785] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:46:25.353 EEST [36785] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:46:25.393 EEST [37014] DEBUG:  started background job 1013
+2022-05-03 13:46:25.401 EEST [37014] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 16}
+2022-05-03 13:46:25.402 EEST [37014] LOG:  im in continuous_agg_refresh_internal and my pid is 37014
+2022-05-03 13:46:25.402 EEST [37014] LOG:  not variable time buckt
+2022-05-03 13:46:25.402 EEST [37014] LOG:  refreshing continuous aggregate "deals_best_daily" in window [ 2022-04-19 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-03 13:46:25.402 EEST [37014] LOG:  mypid is 37014 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:46:25.403 EEST [37014] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651449600000000 1651449600000000
+2022-05-03 13:46:25.403 EEST [37014] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-03 13:46:25.403 EEST [37014] LOG:  mypid is 37014 and the new invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:46:25.403 EEST [37014] LOG:  in function invalidation_process_hypertable_log
+2022-05-03 13:46:25.403 EEST [37014] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-03 13:46:25.404 EEST [37014] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650326400000000 to 1651449600000000]
+2022-05-03 13:46:25.404 EEST [37014] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-19 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:46:25.404 EEST [37014] LOG:  in function invalidation_process_cagg_log, pid is 37014
+2022-05-03 13:46:25.404 EEST [37014] LOG:  in function continuous_agg_refresh_with_window, my pid is 37014
+2022-05-03 13:46:25.404 EEST [37014] LOG:  the refresh window is [1650326400000000 to 1651449600000000]
+2022-05-03 13:46:25.404 EEST [37014] LOG:  the refresh window is [2022-04-19 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:46:25.404 EEST [37014] DEBUG:  invalidation refresh on "deals_best_daily" in window [ 2022-04-19 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-03 13:46:25.404 EEST [37014] LOG:  in function continuous_agg_refresh_execute, my pid is 37014
+2022-05-03 13:46:25.404 EEST [37014] LOG:  the internal refresh window is [1650326400000000 to 1651449600000000]
+2022-05-03 13:46:25.404 EEST [37014] LOG:  the internal refresh window is [2022-04-19 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:46:25.404 EEST [37014] LOG:  in function continuous_agg_update_materialization with pid 37014
+2022-05-03 13:46:25.404 EEST [37014] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-03 13:46:25.404 EEST [37014] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_16 AS D WHERE D.bucket >= '2022-04-19 03:00:00+03' AND D.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.169 EEST [37014] DEBUG:  building index "pg_toast_22368_index" on table "pg_toast_22368" serially
+2022-05-03 13:46:27.169 EEST [37014] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.180 EEST [37014] DEBUG:  verifying table "_hyper_16_48_chunk"
+2022-05-03 13:46:27.180 EEST [37014] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_16_48_chunk ADD CONSTRAINT constraint_48 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.181 EEST [37014] DEBUG:  EventTriggerInvoke 21536
+2022-05-03 13:46:27.181 EEST [37014] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_16_48_chunk ADD CONSTRAINT constraint_48 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.182 EEST [37014] DEBUG:  building index "_hyper_16_48_chunk__materialized_hypertable_16_bucket_idx" on table "_hyper_16_48_chunk" serially
+2022-05-03 13:46:27.182 EEST [37014] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.182 EEST [37014] DEBUG:  index "_hyper_16_48_chunk__materialized_hypertable_16_bucket_idx" can safely use deduplication
+2022-05-03 13:46:27.182 EEST [37014] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.560 EEST [37014] DEBUG:  building index "pg_toast_22375_index" on table "pg_toast_22375" serially
+2022-05-03 13:46:27.560 EEST [37014] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.562 EEST [37014] DEBUG:  verifying table "_hyper_16_49_chunk"
+2022-05-03 13:46:27.562 EEST [37014] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_16_49_chunk ADD CONSTRAINT constraint_49 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.562 EEST [37014] DEBUG:  EventTriggerInvoke 21536
+2022-05-03 13:46:27.562 EEST [37014] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_16_49_chunk ADD CONSTRAINT constraint_49 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.563 EEST [37014] DEBUG:  building index "_hyper_16_49_chunk__materialized_hypertable_16_bucket_idx" on table "_hyper_16_49_chunk" serially
+2022-05-03 13:46:27.563 EEST [37014] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.563 EEST [37014] DEBUG:  index "_hyper_16_49_chunk__materialized_hypertable_16_bucket_idx" can safely use deduplication
+2022-05-03 13:46:27.563 EEST [37014] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_16 SELECT * FROM _timescaledb_internal._partial_view_16 AS I WHERE I.bucket >= '2022-04-19 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-03 13:46:27.715 EEST [37014] DEBUG:  exiting job 1013 with success
+2022-05-03 13:46:27.730 EEST [36785] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:46:27.730 EEST [36785] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1013]" (PID 37014) exited with exit code 0
+2022-05-03 13:47:15.345 EEST [36794] DEBUG:  launching job 1012 "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:47:15.346 EEST [36785] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:47:15.346 EEST [36785] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:47:15.387 EEST [37027] DEBUG:  started background job 1012
+2022-05-03 13:47:15.396 EEST [37027] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 15}
+2022-05-03 13:47:15.397 EEST [37027] LOG:  im in continuous_agg_refresh_internal and my pid is 37027
+2022-05-03 13:47:15.397 EEST [37027] LOG:  not variable time buckt
+2022-05-03 13:47:15.397 EEST [37027] LOG:  refreshing continuous aggregate "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-03 13:47:15.398 EEST [37027] LOG:  mypid is 37027 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:47:15.398 EEST [37027] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651449600000000 1651449600000000
+2022-05-03 13:47:15.398 EEST [37027] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-03 13:47:15.398 EEST [37027] LOG:  mypid is 37027 and the new invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:47:15.398 EEST [37027] LOG:  in function invalidation_process_hypertable_log
+2022-05-03 13:47:15.398 EEST [37027] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-03 13:47:15.399 EEST [37027] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650844800000000 to 1651449600000000]
+2022-05-03 13:47:15.399 EEST [37027] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:47:15.399 EEST [37027] LOG:  in function invalidation_process_cagg_log, pid is 37027
+2022-05-03 13:47:15.399 EEST [37027] DEBUG:  exiting job 1012 with success
+2022-05-03 13:47:15.409 EEST [36785] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:47:15.409 EEST [36785] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1012]" (PID 37027) exited with exit code 0
+2022-05-03 13:47:27.716 EEST [36794] DEBUG:  launching job 1013 "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:47:27.716 EEST [36785] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:47:27.716 EEST [36785] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:47:27.741 EEST [37028] DEBUG:  started background job 1013
+2022-05-03 13:47:27.749 EEST [37028] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 16}
+2022-05-03 13:47:27.750 EEST [37028] LOG:  im in continuous_agg_refresh_internal and my pid is 37028
+2022-05-03 13:47:27.750 EEST [37028] LOG:  not variable time buckt
+2022-05-03 13:47:27.750 EEST [37028] LOG:  refreshing continuous aggregate "deals_best_daily" in window [ 2022-04-19 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-03 13:47:27.750 EEST [37028] LOG:  mypid is 37028 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:47:27.750 EEST [37028] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651449600000000 1651449600000000
+2022-05-03 13:47:27.750 EEST [37028] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-03 13:47:27.750 EEST [37028] LOG:  mypid is 37028 and the new invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:47:27.751 EEST [37028] LOG:  in function invalidation_process_hypertable_log
+2022-05-03 13:47:27.751 EEST [37028] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-03 13:47:27.751 EEST [37028] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650326400000000 to 1651449600000000]
+2022-05-03 13:47:27.751 EEST [37028] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-19 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:47:27.751 EEST [37028] LOG:  in function invalidation_process_cagg_log, pid is 37028
+2022-05-03 13:47:27.752 EEST [37028] DEBUG:  exiting job 1013 with success
+2022-05-03 13:47:27.761 EEST [36785] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:47:27.761 EEST [36785] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1013]" (PID 37028) exited with exit code 0
+2022-05-03 13:48:15.402 EEST [36794] DEBUG:  launching job 1012 "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:48:15.403 EEST [36785] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:48:15.403 EEST [36785] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:48:15.445 EEST [37035] DEBUG:  started background job 1012
+2022-05-03 13:48:15.456 EEST [37035] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 15}
+2022-05-03 13:48:15.457 EEST [37035] LOG:  im in continuous_agg_refresh_internal and my pid is 37035
+2022-05-03 13:48:15.457 EEST [37035] LOG:  not variable time buckt
+2022-05-03 13:48:15.457 EEST [37035] LOG:  refreshing continuous aggregate "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-03 13:48:15.457 EEST [37035] LOG:  mypid is 37035 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:48:15.457 EEST [37035] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651449600000000 1651449600000000
+2022-05-03 13:48:15.457 EEST [37035] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-03 13:48:15.457 EEST [37035] LOG:  mypid is 37035 and the new invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:48:15.457 EEST [37035] LOG:  in function invalidation_process_hypertable_log
+2022-05-03 13:48:15.458 EEST [37035] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-03 13:48:15.458 EEST [37035] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650844800000000 to 1651449600000000]
+2022-05-03 13:48:15.458 EEST [37035] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:48:15.458 EEST [37035] LOG:  in function invalidation_process_cagg_log, pid is 37035
+2022-05-03 13:48:15.458 EEST [37035] DEBUG:  exiting job 1012 with success
+2022-05-03 13:48:15.468 EEST [36785] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1012]"
+2022-05-03 13:48:15.468 EEST [36785] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1012]" (PID 37035) exited with exit code 0
+2022-05-03 13:48:27.754 EEST [36794] DEBUG:  launching job 1013 "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:48:27.755 EEST [36785] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:48:27.756 EEST [36785] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:48:27.799 EEST [37036] DEBUG:  started background job 1013
+2022-05-03 13:48:27.808 EEST [37036] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 16}
+2022-05-03 13:48:27.809 EEST [37036] LOG:  im in continuous_agg_refresh_internal and my pid is 37036
+2022-05-03 13:48:27.809 EEST [37036] LOG:  not variable time buckt
+2022-05-03 13:48:27.809 EEST [37036] LOG:  refreshing continuous aggregate "deals_best_daily" in window [ 2022-04-19 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-03 13:48:27.809 EEST [37036] LOG:  mypid is 37036 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:48:27.809 EEST [37036] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651449600000000 1651449600000000
+2022-05-03 13:48:27.809 EEST [37036] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-03 13:48:27.809 EEST [37036] LOG:  mypid is 37036 and the new invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-03 13:48:27.810 EEST [37036] LOG:  in function invalidation_process_hypertable_log
+2022-05-03 13:48:27.810 EEST [37036] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-03 13:48:27.811 EEST [37036] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650326400000000 to 1651449600000000]
+2022-05-03 13:48:27.811 EEST [37036] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-19 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-03 13:48:27.811 EEST [37036] LOG:  in function invalidation_process_cagg_log, pid is 37036
+2022-05-03 13:48:27.811 EEST [37036] DEBUG:  exiting job 1013 with success
+2022-05-03 13:48:27.821 EEST [36785] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1013]"
+2022-05-03 13:48:27.821 EEST [36785] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1013]" (PID 37036) exited with exit code 0
+2022-05-03 13:48:39.878 EEST [36915] DEBUG:  EventTriggerInvoke 21536
+2022-05-03 13:48:39.879 EEST [36915] DEBUG:  materialization log delete for hypertable 15
+2022-05-03 13:48:39.879 EEST [36915] NOTICE:  drop cascades to table _timescaledb_internal._hyper_15_47_chunk
+2022-05-03 13:48:44.837 EEST [36915] DEBUG:  EventTriggerInvoke 21536
+2022-05-03 13:48:44.837 EEST [36915] DEBUG:  materialization log delete for hypertable 16
+2022-05-03 13:48:44.843 EEST [36915] NOTICE:  drop cascades to 2 other objects
+2022-05-03 13:48:44.843 EEST [36915] DETAIL:  drop cascades to table _timescaledb_internal._hyper_16_48_chunk
+	drop cascades to table _timescaledb_internal._hyper_16_49_chunk
+2022-05-03 13:49:07.373 EEST [36785] LOG:  received fast shutdown request
+2022-05-03 13:49:07.374 EEST [36785] LOG:  aborting any active transactions
+terminating TimescaleDB job scheduler due to administrator command
+terminating TimescaleDB background worker launcher due to administrator command
+2022-05-03 13:49:07.374 EEST [36790] DEBUG:  autovacuum launcher shutting down
+2022-05-03 13:49:07.374 EEST [36794] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2022-05-03 13:49:07.374 EEST [36792] FATAL:  terminating background worker "TimescaleDB Background Worker Launcher" due to administrator command
+2022-05-03 13:49:07.374 EEST [36793] DEBUG:  logical replication launcher shutting down
+terminating TimescaleDB job scheduler due to administrator command
+2022-05-03 13:49:07.374 EEST [36915] FATAL:  terminating connection due to administrator command
+2022-05-03 13:49:07.458 EEST [36785] LOG:  background worker "logical replication launcher" (PID 36793) exited with exit code 1
+2022-05-03 13:49:07.458 EEST [36785] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 36792) exited with exit code 1
+2022-05-03 13:49:07.470 EEST [36785] DEBUG:  unregistering background worker "TimescaleDB Background Worker Scheduler"
+2022-05-03 13:49:07.470 EEST [36785] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 36794) exited with exit code 1
+2022-05-03 13:49:07.470 EEST [36787] LOG:  shutting down
+2022-05-03 13:49:07.471 EEST [36787] DEBUG:  performing replication slot checkpoint
+2022-05-03 13:49:07.513 EEST [36785] LOG:  database system is shut down
+2022-05-04 14:37:47.860 EEST [38667] DEBUG:  registering background worker "logical replication launcher"
+2022-05-04 14:37:47.880 EEST [38667] INFO:  timescaledb loaded
+2022-05-04 14:37:47.880 EEST [38667] DEBUG:  registering background worker "TimescaleDB Background Worker Launcher"
+2022-05-04 14:37:47.880 EEST [38667] DEBUG:  loaded library "timescaledb"
+2022-05-04 14:37:47.886 EEST [38667] LOG:  starting PostgreSQL 14.2 on aarch64-apple-darwin21.3.0, compiled by Apple clang version 13.1.6 (clang-1316.0.21.2), 64-bit
+2022-05-04 14:37:47.887 EEST [38667] LOG:  listening on IPv4 address "127.0.0.1", port 5434
+2022-05-04 14:37:47.887 EEST [38667] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5434"
+2022-05-04 14:37:47.913 EEST [38670] LOG:  database system was shut down at 2022-05-03 13:49:07 EEST
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  checkpoint record is at 1/4CF70A88
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  redo record is at 1/4CF70A88; shutdown true
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  next transaction ID: 5054; next OID: 22382
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  next MultiXactId: 1; next MultiXactOffset: 0
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  oldest unfrozen transaction ID: 726, in database 1
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  oldest MultiXactId: 1, in database 1
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  commit timestamp Xid oldest/newest: 0/0
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  transaction ID wrap limit is 2147484373, limited by database with OID 1
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  MultiXactId wrap limit is 2147483648, limited by database with OID 1
+2022-05-04 14:37:47.914 EEST [38670] DEBUG:  starting up replication slots
+2022-05-04 14:37:47.915 EEST [38670] DEBUG:  MultiXactId wrap limit is 2147483648, limited by database with OID 1
+2022-05-04 14:37:47.915 EEST [38670] DEBUG:  MultiXact member stop limit is now 4294914944 based on MultiXact 1
+2022-05-04 14:37:48.006 EEST [38674] DEBUG:  autovacuum launcher started
+2022-05-04 14:37:48.026 EEST [38667] DEBUG:  starting background worker process "TimescaleDB Background Worker Launcher"
+2022-05-04 14:37:48.045 EEST [38667] DEBUG:  starting background worker process "logical replication launcher"
+2022-05-04 14:37:48.046 EEST [38676] DEBUG:  TimescaleDB background worker launcher started
+2022-05-04 14:37:48.047 EEST [38676] LOG:  TimescaleDB background worker launcher connected to shared catalogs
+2022-05-04 14:37:48.062 EEST [38667] LOG:  database system is ready to accept connections
+2022-05-04 14:37:48.064 EEST [38667] DEBUG:  registering background worker "TimescaleDB Background Worker Scheduler"
+2022-05-04 14:37:48.064 EEST [38667] DEBUG:  starting background worker process "TimescaleDB Background Worker Scheduler"
+2022-05-04 14:37:48.064 EEST [38677] DEBUG:  logical replication launcher started
+2022-05-04 14:37:48.082 EEST [38667] DEBUG:  registering background worker "TimescaleDB Background Worker Scheduler"
+2022-05-04 14:37:48.082 EEST [38667] DEBUG:  starting background worker process "TimescaleDB Background Worker Scheduler"
+2022-05-04 14:37:48.142 EEST [38667] DEBUG:  unregistering background worker "TimescaleDB Background Worker Scheduler"
+2022-05-04 14:37:48.142 EEST [38667] DEBUG:  background worker "TimescaleDB Background Worker Scheduler" (PID 38679) exited with exit code 0
+2022-05-04 14:37:48.757 EEST [38678] DEBUG:  database scheduler starting for database 21121
+
+
+
+
+--------------------- another case (Wed) where this reproduces
+
+2022-05-04 14:39:12.943 EEST [38877] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-04 14:39:12.953 EEST [38877] DEBUG:  building index "pg_toast_22383_index" on table "pg_toast_22383" serially
+2022-05-04 14:39:12.957 EEST [38877] DEBUG:  building index "_materialized_hypertable_17_bucket_idx" on table "_materialized_hypertable_17" serially
+2022-05-04 14:39:12.957 EEST [38877] DEBUG:  index "_materialized_hypertable_17_bucket_idx" can safely use deduplication
+2022-05-04 14:39:12.975 EEST [38877] DEBUG:  building index "pg_toast_22413_index" on table "pg_toast_22413" serially
+2022-05-04 14:39:12.976 EEST [38877] DEBUG:  building index "_materialized_hypertable_18_bucket_idx" on table "_materialized_hypertable_18" serially
+2022-05-04 14:39:12.976 EEST [38877] DEBUG:  index "_materialized_hypertable_18_bucket_idx" can safely use deduplication
+2022-05-04 14:39:18.101 EEST [38899] DEBUG:  autovacuum: processing database "postgres"
+2022-05-04 14:39:18.776 EEST [38678] DEBUG:  launching job 1014 "Refresh Continuous Aggregate Policy [1014]"
+2022-05-04 14:39:18.777 EEST [38667] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1014]"
+2022-05-04 14:39:18.777 EEST [38667] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1014]"
+2022-05-04 14:39:18.809 EEST [38900] DEBUG:  started background job 1014
+2022-05-04 14:39:18.817 EEST [38900] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 17}
+2022-05-04 14:39:18.819 EEST [38900] LOG:  im in continuous_agg_refresh_internal and refresh_window_arg is (next line)
+2022-05-04 14:39:18.819 EEST [38900] LOG:  refreshing cagg, refresh_window_arg "deals_best_weekly" in window [ 2022-04-19 14:39:18.819087+03, 2022-05-03 14:39:18.819094+03 ]
+2022-05-04 14:39:18.819 EEST [38900] LOG:  not variable time buckt
+2022-05-04 14:39:18.819 EEST [38900] LOG:  refreshing continuous aggregate "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-04 14:39:18.819 EEST [38900] LOG:  mypid is 38900 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-04 14:39:18.820 EEST [38900] LOG:  mypid is ?maybe see above? and I did not find a threshold in function invalidation_threshold_set_or_get
+2022-05-04 14:39:18.820 EEST [38900] LOG:  mypid is 38900 and the new invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-04 14:39:18.820 EEST [38900] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 14:39:18.820 EEST [38900] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 14:39:18.821 EEST [38900] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650844800000000 to 1651449600000000]
+2022-05-04 14:39:18.821 EEST [38900] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-04 14:39:18.821 EEST [38900] LOG:  in function invalidation_process_cagg_log, pid is 38900
+2022-05-04 14:39:18.821 EEST [38900] LOG:  in function continuous_agg_refresh_with_window, my pid is 38900
+2022-05-04 14:39:18.821 EEST [38900] LOG:  the refresh window is [1650844800000000 to 1651449600000000]
+2022-05-04 14:39:18.821 EEST [38900] LOG:  the refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-04 14:39:18.821 EEST [38900] DEBUG:  invalidation refresh on "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-04 14:39:18.821 EEST [38900] LOG:  in function continuous_agg_refresh_execute, my pid is 38900
+2022-05-04 14:39:18.821 EEST [38900] LOG:  the internal refresh window is [1650844800000000 to 1651449600000000]
+2022-05-04 14:39:18.821 EEST [38900] LOG:  the internal refresh window is [2022-04-25 03:00:00+03 to 2022-05-02 03:00:00+03]
+2022-05-04 14:39:18.821 EEST [38900] LOG:  in function continuous_agg_update_materialization with pid 38900
+2022-05-04 14:39:18.822 EEST [38900] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-04 14:39:18.822 EEST [38900] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_17 AS D WHERE D.bucket >= '2022-04-25 03:00:00+03' AND D.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 14:39:19.946 EEST [38900] DEBUG:  building index "pg_toast_22433_index" on table "pg_toast_22433" serially
+2022-05-04 14:39:19.946 EEST [38900] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 14:39:19.982 EEST [38900] DEBUG:  verifying table "_hyper_17_50_chunk"
+2022-05-04 14:39:19.982 EEST [38900] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_17_50_chunk ADD CONSTRAINT constraint_50 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 14:39:19.982 EEST [38900] DEBUG:  EventTriggerInvoke 21536
+2022-05-04 14:39:19.982 EEST [38900] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_17_50_chunk ADD CONSTRAINT constraint_50 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 14:39:19.983 EEST [38900] DEBUG:  building index "_hyper_17_50_chunk__materialized_hypertable_17_bucket_idx" on table "_hyper_17_50_chunk" serially
+2022-05-04 14:39:19.983 EEST [38900] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 14:39:19.983 EEST [38900] DEBUG:  index "_hyper_17_50_chunk__materialized_hypertable_17_bucket_idx" can safely use deduplication
+2022-05-04 14:39:19.983 EEST [38900] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-04-25 03:00:00+03' AND I.bucket < '2022-05-02 03:00:00+03' ;"
+2022-05-04 14:39:20.185 EEST [38900] DEBUG:  exiting job 1014 with success
+2022-05-04 14:39:20.198 EEST [38667] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1014]"
+2022-05-04 14:39:20.198 EEST [38667] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1014]" (PID 38900) exited with exit code 0
+2022-05-04 14:39:35.203 EEST [38678] DEBUG:  launching job 1015 "Refresh Continuous Aggregate Policy [1015]"
+2022-05-04 14:39:35.203 EEST [38667] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1015]"
+2022-05-04 14:39:35.203 EEST [38667] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1015]"
+2022-05-04 14:39:35.231 EEST [38903] DEBUG:  started background job 1015
+2022-05-04 14:39:35.240 EEST [38903] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 18}
+2022-05-04 14:39:35.241 EEST [38903] LOG:  im in continuous_agg_refresh_internal and refresh_window_arg is (next line)
+2022-05-04 14:39:35.241 EEST [38903] LOG:  refreshing cagg, refresh_window_arg "deals_best_daily" in window [ 2022-04-19 14:39:35.241442+03, 2022-05-03 14:39:35.241452+03 ]
+2022-05-04 14:39:35.241 EEST [38903] LOG:  not variable time buckt
+2022-05-04 14:39:35.242 EEST [38903] LOG:  refreshing continuous aggregate "deals_best_daily" in window [ 2022-04-20 03:00:00+03, 2022-05-03 03:00:00+03 ]
+2022-05-04 14:39:35.242 EEST [38903] LOG:  mypid is 38903 and computed_invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 14:39:35.242 EEST [38903] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-04 14:39:35.242 EEST [38903] LOG:  mypid is 38903 and the new invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 14:39:35.242 EEST [38903] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 14:39:35.242 EEST [38903] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 14:39:35.243 EEST [38903] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 14:39:35.243 EEST [38903] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 14:39:35.243 EEST [38903] LOG:  in function invalidation_process_cagg_log, pid is 38903
+2022-05-04 14:39:35.243 EEST [38903] LOG:  in function continuous_agg_refresh_with_window, my pid is 38903
+2022-05-04 14:39:35.243 EEST [38903] LOG:  the refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 14:39:35.243 EEST [38903] LOG:  the refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 14:39:35.243 EEST [38903] DEBUG:  invalidation refresh on "deals_best_daily" in window [ 2022-04-20 03:00:00+03, 2022-05-03 03:00:00+03 ]
+2022-05-04 14:39:35.243 EEST [38903] LOG:  in function continuous_agg_refresh_execute, my pid is 38903
+2022-05-04 14:39:35.243 EEST [38903] LOG:  the internal refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 14:39:35.243 EEST [38903] LOG:  the internal refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 14:39:35.243 EEST [38903] LOG:  in function continuous_agg_update_materialization with pid 38903
+2022-05-04 14:39:35.243 EEST [38903] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-04 14:39:35.243 EEST [38903] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_18 AS D WHERE D.bucket >= '2022-04-20 03:00:00+03' AND D.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.543 EEST [38903] DEBUG:  building index "pg_toast_22440_index" on table "pg_toast_22440" serially
+2022-05-04 14:39:36.543 EEST [38903] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.550 EEST [38903] DEBUG:  verifying table "_hyper_18_51_chunk"
+2022-05-04 14:39:36.550 EEST [38903] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_18_51_chunk ADD CONSTRAINT constraint_51 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.551 EEST [38903] DEBUG:  EventTriggerInvoke 21536
+2022-05-04 14:39:36.551 EEST [38903] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_18_51_chunk ADD CONSTRAINT constraint_51 CHECK ( bucket >= TIMESTAMPTZ '2022-02-17 02:00:00+02' AND bucket < TIMESTAMPTZ '2022-04-28 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.551 EEST [38903] DEBUG:  building index "_hyper_18_51_chunk__materialized_hypertable_18_bucket_idx" on table "_hyper_18_51_chunk" serially
+2022-05-04 14:39:36.551 EEST [38903] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.551 EEST [38903] DEBUG:  index "_hyper_18_51_chunk__materialized_hypertable_18_bucket_idx" can safely use deduplication
+2022-05-04 14:39:36.551 EEST [38903] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.554 EEST [38903] DEBUG:  building index "pg_toast_22447_index" on table "pg_toast_22447" serially
+2022-05-04 14:39:36.554 EEST [38903] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.555 EEST [38903] DEBUG:  verifying table "_hyper_18_52_chunk"
+2022-05-04 14:39:36.555 EEST [38903] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_18_52_chunk ADD CONSTRAINT constraint_52 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.555 EEST [38903] DEBUG:  EventTriggerInvoke 21536
+2022-05-04 14:39:36.555 EEST [38903] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_18_52_chunk ADD CONSTRAINT constraint_52 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.556 EEST [38903] DEBUG:  building index "_hyper_18_52_chunk__materialized_hypertable_18_bucket_idx" on table "_hyper_18_52_chunk" serially
+2022-05-04 14:39:36.556 EEST [38903] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.556 EEST [38903] DEBUG:  index "_hyper_18_52_chunk__materialized_hypertable_18_bucket_idx" can safely use deduplication
+2022-05-04 14:39:36.556 EEST [38903] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_18 SELECT * FROM _timescaledb_internal._partial_view_18 AS I WHERE I.bucket >= '2022-04-20 03:00:00+03' AND I.bucket < '2022-05-03 03:00:00+03' ;"
+2022-05-04 14:39:36.557 EEST [38903] DEBUG:  exiting job 1015 with success
+2022-05-04 14:39:36.566 EEST [38667] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1015]"
+2022-05-04 14:39:36.566 EEST [38667] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1015]" (PID 38903) exited with exit code 0
+2022-05-04 14:39:48.291 EEST [38917] DEBUG:  autovacuum: processing database "repro298"
+2022-05-04 14:40:18.107 EEST [38918] DEBUG:  autovacuum: processing database "postgres"
+2022-05-04 14:40:20.187 EEST [38678] DEBUG:  launching job 1014 "Refresh Continuous Aggregate Policy [1014]"
+2022-05-04 14:40:20.188 EEST [38667] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1014]"
+2022-05-04 14:40:20.188 EEST [38667] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1014]"
+2022-05-04 14:40:20.233 EEST [38919] DEBUG:  started background job 1014
+2022-05-04 14:40:20.245 EEST [38919] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 17}
+2022-05-04 14:40:20.246 EEST [38919] LOG:  im in continuous_agg_refresh_internal and refresh_window_arg is (next line)
+2022-05-04 14:40:20.246 EEST [38919] LOG:  refreshing cagg, refresh_window_arg "deals_best_weekly" in window [ 2022-04-19 14:40:20.246167+03, 2022-05-03 14:40:20.246171+03 ]
+2022-05-04 14:40:20.246 EEST [38919] LOG:  not variable time buckt
+2022-05-04 14:40:20.246 EEST [38919] LOG:  refreshing continuous aggregate "deals_best_weekly" in window [ 2022-04-25 03:00:00+03, 2022-05-02 03:00:00+03 ]
+2022-05-04 14:40:20.246 EEST [38919] LOG:  mypid is 38919 and computed_invalidation_threshold is 1651449600000000 or 2022-05-02 03:00:00+03
+2022-05-04 14:40:20.246 EEST [38919] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651536000000000 1651449600000000
+2022-05-04 14:40:20.246 EEST [38919] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-04 14:40:20.246 EEST [38919] LOG:  mypid is 38919 and the new invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 14:40:20.246 EEST [38919] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 14:40:20.246 EEST [38919] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 14:40:20.247 EEST [38919] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650844800000000 to 1651536000000000]
+2022-05-04 14:40:20.247 EEST [38919] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-25 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 14:40:20.247 EEST [38919] LOG:  in function invalidation_process_cagg_log, pid is 38919
+2022-05-04 14:40:20.247 EEST [38919] LOG:  in function continuous_agg_refresh_with_window, my pid is 38919
+2022-05-04 14:40:20.247 EEST [38919] LOG:  the refresh window is [1650844800000000 to 1651536000000000]
+2022-05-04 14:40:20.247 EEST [38919] LOG:  the refresh window is [2022-04-25 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 14:40:20.247 EEST [38919] DEBUG:  invalidation refresh on "deals_best_weekly" in window [ 2022-05-02 03:00:00+03, 2022-05-09 03:00:00+03 ]
+2022-05-04 14:40:20.247 EEST [38919] LOG:  in function continuous_agg_refresh_execute, my pid is 38919
+2022-05-04 14:40:20.247 EEST [38919] LOG:  the internal refresh window is [1651449600000000 to 1652054400000000]
+2022-05-04 14:40:20.247 EEST [38919] LOG:  the internal refresh window is [2022-05-02 03:00:00+03 to 2022-05-09 03:00:00+03]
+2022-05-04 14:40:20.247 EEST [38919] LOG:  in function continuous_agg_update_materialization with pid 38919
+2022-05-04 14:40:20.247 EEST [38919] DEBUG:  rehashing catalog cache id 35 for pg_namespace; 9 tups, 4 buckets
+2022-05-04 14:40:20.247 EEST [38919] CONTEXT:  SQL statement "DELETE FROM _timescaledb_internal._materialized_hypertable_17 AS D WHERE D.bucket >= '2022-05-02 03:00:00+03' AND D.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 14:40:20.499 EEST [38919] DEBUG:  building index "pg_toast_22454_index" on table "pg_toast_22454" serially
+2022-05-04 14:40:20.499 EEST [38919] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 14:40:20.508 EEST [38919] DEBUG:  verifying table "_hyper_17_53_chunk"
+2022-05-04 14:40:20.508 EEST [38919] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_17_53_chunk ADD CONSTRAINT constraint_53 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 14:40:20.509 EEST [38919] DEBUG:  EventTriggerInvoke 21536
+2022-05-04 14:40:20.509 EEST [38919] CONTEXT:  SQL statement " ALTER TABLE _timescaledb_internal._hyper_17_53_chunk ADD CONSTRAINT constraint_53 CHECK ( bucket >= TIMESTAMPTZ '2022-04-28 03:00:00+03' AND bucket < TIMESTAMPTZ '2022-07-07 03:00:00+03' ) "
+	PL/pgSQL function _timescaledb_internal.chunk_constraint_add_table_constraint(_timescaledb_catalog.chunk_constraint) line 58 at EXECUTE
+	SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 14:40:20.509 EEST [38919] DEBUG:  building index "_hyper_17_53_chunk__materialized_hypertable_17_bucket_idx" on table "_hyper_17_53_chunk" serially
+2022-05-04 14:40:20.509 EEST [38919] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 14:40:20.509 EEST [38919] DEBUG:  index "_hyper_17_53_chunk__materialized_hypertable_17_bucket_idx" can safely use deduplication
+2022-05-04 14:40:20.509 EEST [38919] CONTEXT:  SQL statement "INSERT INTO _timescaledb_internal._materialized_hypertable_17 SELECT * FROM _timescaledb_internal._partial_view_17 AS I WHERE I.bucket >= '2022-05-02 03:00:00+03' AND I.bucket < '2022-05-09 03:00:00+03' ;"
+2022-05-04 14:40:20.511 EEST [38919] DEBUG:  exiting job 1014 with success
+2022-05-04 14:40:20.520 EEST [38667] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1014]"
+2022-05-04 14:40:20.520 EEST [38667] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1014]" (PID 38919) exited with exit code 0
+2022-05-04 14:40:36.559 EEST [38678] DEBUG:  launching job 1015 "Refresh Continuous Aggregate Policy [1015]"
+2022-05-04 14:40:36.559 EEST [38667] DEBUG:  registering background worker "Refresh Continuous Aggregate Policy [1015]"
+2022-05-04 14:40:36.559 EEST [38667] DEBUG:  starting background worker process "Refresh Continuous Aggregate Policy [1015]"
+2022-05-04 14:40:36.601 EEST [38928] DEBUG:  started background job 1015
+2022-05-04 14:40:36.610 EEST [38928] DEBUG:  Executing policy_refresh_continuous_aggregate with parameters {"end_offset": "1 day", "start_offset": "15 days", "mat_hypertable_id": 18}
+2022-05-04 14:40:36.611 EEST [38928] LOG:  im in continuous_agg_refresh_internal and refresh_window_arg is (next line)
+2022-05-04 14:40:36.611 EEST [38928] LOG:  refreshing cagg, refresh_window_arg "deals_best_daily" in window [ 2022-04-19 14:40:36.611408+03, 2022-05-03 14:40:36.611413+03 ]
+2022-05-04 14:40:36.611 EEST [38928] LOG:  not variable time buckt
+2022-05-04 14:40:36.611 EEST [38928] LOG:  refreshing continuous aggregate "deals_best_daily" in window [ 2022-04-20 03:00:00+03, 2022-05-03 03:00:00+03 ]
+2022-05-04 14:40:36.611 EEST [38928] LOG:  mypid is 38928 and computed_invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 14:40:36.612 EEST [38928] DEBUG:  hypertable 4 existing watermark >= new invalidation threshold 1651536000000000 1651536000000000
+2022-05-04 14:40:36.612 EEST [38928] LOG:  I found a threshold! in invalidation_threshold_set_or_get
+2022-05-04 14:40:36.612 EEST [38928] LOG:  mypid is 38928 and the new invalidation_threshold is 1651536000000000 or 2022-05-03 03:00:00+03
+2022-05-04 14:40:36.612 EEST [38928] LOG:  in function invalidation_process_hypertable_log
+2022-05-04 14:40:36.612 EEST [38928] LOG:  in function move_invalidations_from_hyper_to_cagg_log
+2022-05-04 14:40:36.613 EEST [38928] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [1650412800000000 to 1651536000000000]
+2022-05-04 14:40:36.613 EEST [38928] LOG:  in process_cagg_invalidations_and_refresh, the refresh window is [2022-04-20 03:00:00+03 to 2022-05-03 03:00:00+03]
+2022-05-04 14:40:36.613 EEST [38928] LOG:  in function invalidation_process_cagg_log, pid is 38928
+2022-05-04 14:40:36.614 EEST [38928] DEBUG:  exiting job 1015 with success
+2022-05-04 14:40:36.624 EEST [38667] DEBUG:  unregistering background worker "Refresh Continuous Aggregate Policy [1015]"
+2022-05-04 14:40:36.624 EEST [38667] DEBUG:  background worker "Refresh Continuous Aggregate Policy [1015]" (PID 38928) exited with exit code 0
+2022-05-04 14:40:48.303 EEST [38929] DEBUG:  autovacuum: processing database "repro298"
+2022-05-04 14:40:54.808 EEST [38667] LOG:  received fast shutdown request
+2022-05-04 14:40:54.824 EEST [38667] LOG:  aborting any active transactions
+terminating TimescaleDB job scheduler due to administrator command
+terminating TimescaleDB background worker launcher due to administrator command
+2022-05-04 14:40:54.824 EEST [38674] DEBUG:  autovacuum launcher shutting down
+2022-05-04 14:40:54.825 EEST [38678] FATAL:  terminating background worker "TimescaleDB Background Worker Scheduler" due to administrator command
+2022-05-04 14:40:54.825 EEST [38676] FATAL:  terminating background worker "TimescaleDB Background Worker Launcher" due to administrator command
+2022-05-04 14:40:54.825 EEST [38677] DEBUG:  logical replication launcher shutting down
+terminating TimescaleDB job scheduler due to administrator command
+2022-05-04 14:40:54.825 EEST [38877] FATAL:  terminating connection due to administrator command
+2022-05-04 14:40:54.900 EEST [38667] DEBUG:  unregistering background worker "TimescaleDB Background Worker Scheduler"
+2022-05-04 14:40:54.900 EEST [38667] LOG:  background worker "TimescaleDB Background Worker Scheduler" (PID 38678) exited with exit code 1
+2022-05-04 14:40:54.903 EEST [38667] LOG:  background worker "logical replication launcher" (PID 38677) exited with exit code 1
+2022-05-04 14:40:54.906 EEST [38667] LOG:  background worker "TimescaleDB Background Worker Launcher" (PID 38676) exited with exit code 1
+2022-05-04 14:40:54.907 EEST [38671] LOG:  shutting down
+2022-05-04 14:40:54.907 EEST [38671] DEBUG:  performing replication slot checkpoint
+2022-05-04 14:40:54.941 EEST [38667] LOG:  database system is shut down
+
+
+
+
+
+
+
+
+--------------------------- -----------------------------
+
