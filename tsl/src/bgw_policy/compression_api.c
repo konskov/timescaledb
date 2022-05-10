@@ -172,6 +172,7 @@ validate_compress_after_type(Oid partitioning_type, Oid compress_after_type)
 Datum
 policy_compression_add(PG_FUNCTION_ARGS)
 {
+	elog(DEBUG1, "in %s", __func__);
 	NameData application_name;
 	NameData proc_name, proc_schema, owner;
 	int32 job_id;

@@ -385,6 +385,7 @@ scheduled_ts_bgw_job_start(ScheduledBgwJob *sjob,
 {
 	pid_t pid;
 	BgwHandleStatus status;
+	elog(LOG, "in %s", __func__);
 
 	scheduled_bgw_job_transition_state_to(sjob, JOB_STATE_STARTED);
 
@@ -438,6 +439,8 @@ terminate_and_cleanup_job(ScheduledBgwJob *sjob)
 List *
 ts_update_scheduled_jobs_list(List *cur_jobs_list, MemoryContext mctx)
 {
+	elog(DEBUG1, "In %s", __func__);
+	elog(NOTICE, "In %s", __func__);
 	List *new_jobs = ts_bgw_job_get_scheduled(sizeof(ScheduledBgwJob), mctx);
 	ListCell *new_ptr = list_head(new_jobs);
 	ListCell *cur_ptr = list_head(cur_jobs_list);
@@ -730,6 +733,7 @@ void
 ts_bgw_scheduler_process(int32 run_for_interval_ms,
 						 register_background_worker_callback_type bgw_register)
 {
+	elog(LOG, "In %s, run_for_interval_ms is %d", __func__, run_for_interval_ms);
 	TimestampTz start = ts_timer_get_current_timestamp();
 	TimestampTz quit_time = DT_NOEND;
 
@@ -859,6 +863,7 @@ static void handle_sighup(SIGNAL_ARGS)
 void
 ts_bgw_scheduler_register_signal_handlers(void)
 {
+	elog(LOG, "in %s", __func__);
 	/*
 	 * do not use the default `bgworker_die` sigterm handler because it does
 	 * not respect critical sections
@@ -874,6 +879,7 @@ ts_bgw_scheduler_register_signal_handlers(void)
 Datum
 ts_bgw_scheduler_main(PG_FUNCTION_ARGS)
 {
+	elog(LOG, "in %s", __func__);
 	BackgroundWorkerBlockSignals();
 	/* Setup any signal handlers here */
 	ts_bgw_scheduler_register_signal_handlers();

@@ -38,6 +38,7 @@
 Datum
 job_add(PG_FUNCTION_ARGS)
 {
+	elog(DEBUG1, "In job_add, %s", __func__);
 	NameData application_name;
 	NameData proc_name;
 	NameData proc_schema;

@@ -108,6 +108,7 @@ deserialize_test_parameters(char *params, int32 *ttl, Oid *user_oid)
 extern Datum
 ts_bgw_db_scheduler_test_main(PG_FUNCTION_ARGS)
 {
+	elog(LOG, "IN %s", __func__);
 	Oid db_oid = DatumGetObjectId(MyBgworkerEntry->bgw_main_arg);
 	int32 ttl;
 	Oid user_oid;

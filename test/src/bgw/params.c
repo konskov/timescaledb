@@ -196,6 +196,7 @@ ts_initialize_timer_latch()
 void
 ts_reset_and_wait_timer_latch()
 {
+	elog(LOG, "IN %s", __func__);
 	bool do_close;
 	TestParamsWrapper *wrapper = params_open_wrapper(&do_close);
 

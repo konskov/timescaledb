@@ -180,6 +180,7 @@ estimate_chunk_fillfactor(Chunk *chunk, Hyperspace *space)
 	const Dimension *time_dim = hyperspace_get_open_dimension(space, 0);
 	const DimensionSlice *time_slice = get_chunk_time_slice(chunk, space);
 	Oid time_dim_type = ts_dimension_get_partition_type(time_dim);
+	elog(LOG, "in %s", __func__);
 
 	if (IS_TIMESTAMP_TYPE(time_dim_type))
 	{
@@ -375,6 +376,7 @@ TsFdwRelInfo *
 fdw_relinfo_create(PlannerInfo *root, RelOptInfo *rel, Oid server_oid, Oid local_table_id,
 				   TsFdwRelInfoType type, bool gapfill_safe)
 {
+	elog(LOG, "IN %s", __func__);
 	TsFdwRelInfo *fpinfo;
 	ListCell *lc;
 	RangeTblEntry *rte = planner_rt_fetch(rel->relid, root);

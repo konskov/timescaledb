@@ -71,6 +71,7 @@ wait_using_wait_latch(TimestampTz until)
 
 	if (timeout > MAX_TIMEOUT)
 		timeout = MAX_TIMEOUT;
+	// elog(LOG, "in %s, timeout is %")
 
 	/* Wait latch requires timeout to be <= INT_MAX */
 	if ((int64) timeout > (int64) INT_MAX)

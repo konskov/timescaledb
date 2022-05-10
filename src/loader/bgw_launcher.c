@@ -77,14 +77,14 @@ typedef enum SchedulerState
 } SchedulerState;
 
 #ifdef TS_DEBUG
-#define BGW_LAUNCHER_RESTART_TIME_S 0
+#define BGW_LAUNCHER_RESTART_TIME_S 60
 #else
 #define BGW_LAUNCHER_RESTART_TIME_S 60
 #endif
 
 /* WaitLatch expects a long */
 #ifdef TS_DEBUG
-#define BGW_LAUNCHER_POLL_TIME_MS 10L
+#define BGW_LAUNCHER_POLL_TIME_MS 80000L
 #else
 #define BGW_LAUNCHER_POLL_TIME_MS 60000L
 #endif
@@ -316,6 +316,7 @@ db_hash_entry_create_if_not_exists(HTAB *db_htab, Oid db_oid)
 {
 	DbHashEntry *db_he;
 	bool found;
+	elog(LOG, "in %s for db_oid %u", __func__, db_oid);
 
 	db_he = (DbHashEntry *) hash_search(db_htab, &db_oid, HASH_ENTER, &found);
 	if (!found)
@@ -324,7 +325,7 @@ db_hash_entry_create_if_not_exists(HTAB *db_htab, Oid db_oid)
 		db_he->state = ENABLED;
 		SetInvalidVirtualTransactionId(db_he->vxid);
 		db_he->state_transition_failures = 0;
-
+		elog(LOG, "entry for the db not found");
 		/*
 		 * Try to allocate a spot right away to give schedulers priority over
 		 * other bgws. This is especially important on initial server startup
@@ -354,6 +355,7 @@ populate_database_htab(HTAB *db_htab)
 	Relation rel;
 	TableScanDesc scan;
 	HeapTuple tup;
+	elog(LOG, "in %s", __func__);
 
 	/*
 	 * by this time we should already be connected to the db, and only have
@@ -400,6 +402,7 @@ scheduler_state_trans_disabled_to_enabled(DbHashEntry *entry)
 static void
 scheduler_state_trans_enabled_to_allocated(DbHashEntry *entry)
 {
+	elog(LOG, "IN %s", __func__);
 	Assert(entry->state == ENABLED);
 	Assert(entry->db_scheduler_handle == NULL);
 	/* Reserve a spot for this scheduler with BGW counter */
@@ -567,7 +570,7 @@ static AckResult
 message_start_action(HTAB *db_htab, BgwMessage *message)
 {
 	DbHashEntry *entry;
-
+	// elog(LOG, "in %s, db_oid is %u", __func__, message->oid);
 	entry = db_hash_entry_create_if_not_exists(db_htab, message->db_oid);
 
 	if (entry->state == DISABLED)
@@ -679,12 +682,15 @@ launcher_handle_message(HTAB *db_htab)
 	switch (message->message_type)
 	{
 		case START:
+			elog(LOG, "handling a START message");
 			action_result = message_start_action(db_htab, message);
 			break;
 		case STOP:
+			elog(LOG, "handling a STOP message");
 			action_result = message_stop_action(db_htab, message);
 			break;
 		case RESTART:
+			elog(LOG, "handling a RESTART message");
 			action_result = message_restart_action(db_htab, message, vxid);
 			break;
 	}
@@ -721,6 +727,7 @@ static void launcher_sigterm(SIGNAL_ARGS)
 extern Datum
 ts_bgw_cluster_launcher_main(PG_FUNCTION_ARGS)
 {
+	elog(LOG, "in %s", __func__);
 	HTAB **htab_storage;
 
 	HTAB *db_htab;
@@ -791,6 +798,10 @@ ts_bgw_cluster_launcher_main(PG_FUNCTION_ARGS)
 						  BGW_LAUNCHER_POLL_TIME_MS,
 						  PG_WAIT_EXTENSION);
 		ResetLatch(MyLatch);
+		if (wl_rc & WL_TIMEOUT) 
+			elog(LOG, "timeout occured in %s, line 797", __func__);
+		if (wl_rc & WL_LATCH_SET)
+			elog(LOG, "Latch was set in the wait loop of %s", __func__); 
 		if (wl_rc & WL_POSTMASTER_DEATH)
 			bgw_on_postmaster_death();
 

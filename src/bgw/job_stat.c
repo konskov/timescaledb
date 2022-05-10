@@ -14,6 +14,8 @@
 #include "scanner.h"
 #include "timer.h"
 #include "utils.h"
+#include <miscadmin.h>
+#include <unistd.h>
 
 #define MAX_INTERVALS_BACKOFF 5
 #define MAX_FAILURES_MULTIPLIER 20
@@ -22,6 +24,7 @@
 static bool
 bgw_job_stat_next_start_was_set(FormData_bgw_job_stat *fd)
 {
+	elog(DEBUG1, "In %s, fd->next_start != DT_NOBEGIN is %d", __func__, fd->next_start != DT_NOBEGIN);
 	return fd->next_start != DT_NOBEGIN;
 }
 
@@ -117,6 +120,7 @@ ts_bgw_job_stat_delete(int32 bgw_job_id)
 static ScanTupleResult
 bgw_job_stat_tuple_mark_start(TupleInfo *ti, void *const data)
 {
+	elog(DEBUG1, "In %s", __func__);
 	bool should_free;
 	HeapTuple tuple = ts_scanner_fetch_heap_tuple(ti, false, &should_free);
 	HeapTuple new_tuple = heap_copytuple(tuple);
@@ -277,6 +281,7 @@ calculate_next_start_on_crash(int consecutive_crashes, BgwJob *job)
 static ScanTupleResult
 bgw_job_stat_tuple_mark_end(TupleInfo *ti, void *const data)
 {
+	elog(DEBUG1, "In %s", __func__);
 	JobResultCtx *result_ctx = data;
 	bool should_free;
 	HeapTuple tuple = ts_scanner_fetch_heap_tuple(ti, false, &should_free);
@@ -409,6 +414,12 @@ bgw_job_stat_insert_relation(Relation rel, int32 bgw_job_id, bool mark_start,
 void
 ts_bgw_job_stat_mark_start(int32 bgw_job_id)
 {
+	elog(DEBUG1, "in %s for job_id %d", __func__, bgw_job_id);
+	// bool continue_sleep = true;
+	// do {
+	// 	sleep(2);
+	// 	elog(LOG, "zzzzz %d", MyProcPid);
+	// } while (continue_sleep);
 	/* Use double-check locking */
 	if (!bgw_job_stat_scan_job_id(bgw_job_id,
 								  bgw_job_stat_tuple_mark_start,

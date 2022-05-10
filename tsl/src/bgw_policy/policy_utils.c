@@ -72,6 +72,7 @@ policy_config_check_hypertable_lag_equality(Jsonb *config, const char *json_labe
 Datum
 subtract_interval_from_now(Interval *lag, Oid time_dim_type)
 {
+	elog(LOG, "IN %s", __func__);
 #ifdef TS_DEBUG
 	Datum res = ts_get_mock_time_or_current_time();
 #else
