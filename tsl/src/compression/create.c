@@ -424,6 +424,19 @@ create_compressed_table_indexes(Oid compresstable_relid, CompressColInfo *compre
 		.name = COMPRESSION_COLUMN_METADATA_SEQUENCE_NUM_NAME,
 	};
 	int i;
+	// this is a list of IndexElem 
+	// List *idxcols = NIL;
+	IndexStmt stmt_composite = {
+		.type = T_IndexStmt,
+		.accessMethod = DEFAULT_INDEX_TYPE,
+		.idxname = NULL,
+		.relation = makeRangeVar(NameStr(ht->fd.schema_name), NameStr(ht->fd.table_name), 0),
+		.tableSpace = get_tablespace_name(get_rel_tablespace(ht->main_table_relid)),
+	};
+
+	List *idxcols = NIL;
+	idxcols = lappend(idxcols, &sequence_num_elem);
+
 	for (i = 0; i < compress_cols->numcols; i++)
 	{
 		NameData index_name;
@@ -436,6 +449,8 @@ create_compressed_table_indexes(Oid compresstable_relid, CompressColInfo *compre
 			continue;
 
 		stmt.indexParams = list_make2(&segment_elem, &sequence_num_elem);
+		idxcols = lappend(idxcols, &segment_elem);
+
 		index_addr = DefineIndex(ht->main_table_relid,
 								 &stmt,
 								 InvalidOid, /* IndexRelationId */
@@ -460,6 +475,34 @@ create_compressed_table_indexes(Oid compresstable_relid, CompressColInfo *compre
 			 COMPRESSION_COLUMN_METADATA_SEQUENCE_NUM_NAME);
 		ReleaseSysCache(index_tuple);
 	}
+
+	// now create the composite index for all the segmentby columns plus the seq_num
+	elog(LOG, "NOW attempting to build composite index");
+	ObjectAddress index_addr_composite;
+	NameData index_name;
+	HeapTuple index_tuple_composite;
+	stmt_composite.indexParams = idxcols;
+	index_addr_composite = DefineIndex(ht->main_table_relid,
+								 &stmt_composite,
+								 InvalidOid, /* IndexRelationId */
+								 InvalidOid, /* parentIndexId */
+								 InvalidOid, /* parentConstraintId */
+								 false,		 /* is_alter_table */
+								 false,		 /* check_rights */
+								 false,		 /* check_not_in_use */
+								 false,		 /* skip_build */
+								 false);	 /* quiet */
+		index_tuple_composite = SearchSysCache1(RELOID, ObjectIdGetDatum(index_addr_composite.objectId));
+
+	if (!HeapTupleIsValid(index_tuple_composite))
+			elog(ERROR, "cache lookup failed for index relid %u", index_addr_composite.objectId);
+		index_name = ((Form_pg_class) GETSTRUCT(index_tuple_composite))->relname;
+		elog(LOG,
+			 "adding index %s ON %s.%s",
+			 NameStr(index_name),
+			 NameStr(ht->fd.schema_name),
+			 NameStr(ht->fd.table_name));
+		ReleaseSysCache(index_tuple_composite);
 
 	ts_cache_release(hcache);
 }
@@ -533,6 +576,7 @@ set_toast_tuple_target_on_compressed(Oid compressed_table_id)
 static int32
 create_compression_table(Oid owner, CompressColInfo *compress_cols)
 {
+	elog(LOG, "In %s", __func__);
 	ObjectAddress tbladdress;
 	char relnamebuf[NAMEDATALEN];
 	CatalogSecurityContext sec_ctx;
