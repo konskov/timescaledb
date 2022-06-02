@@ -27,6 +27,7 @@
 #include "bgw_policy/job.h"
 
 #define POLICY_RETENTION_PROC_NAME "policy_retention"
+#define POLICY_RETENTION_CHECK_NAME "policy_retention_check"
 #define CONFIG_KEY_HYPERTABLE_ID "hypertable_id"
 #define CONFIG_KEY_DROP_AFTER "drop_after"
 
@@ -256,10 +257,12 @@ policy_retention_add(PG_FUNCTION_ARGS)
 
 	/* Next, insert a new job into jobs table */
 	namestrcpy(&application_name, "Retention Policy");
-	NameData proc_name, proc_schema, owner;
+	NameData proc_name, proc_schema, owner, check_name, check_schema;
 	namestrcpy(&proc_name, POLICY_RETENTION_PROC_NAME);
 	namestrcpy(&proc_schema, INTERNAL_SCHEMA_NAME);
 	namestrcpy(&owner, GetUserNameFromId(owner_id, false));
+	namestrcpy(&check_name, POLICY_RETENTION_CHECK_NAME);
+	namestrcpy(&check_schema, INTERNAL_SCHEMA_NAME);
 
 	job_id = ts_bgw_job_insert_relation(&application_name,
 										&default_schedule_interval,
@@ -268,6 +271,8 @@ policy_retention_add(PG_FUNCTION_ARGS)
 										&default_retry_period,
 										&proc_schema,
 										&proc_name,
+										&check_schema,
+										&check_name,
 										&owner,
 										true,
 										hypertable->fd.id,

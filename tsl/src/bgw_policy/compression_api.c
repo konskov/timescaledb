@@ -38,6 +38,7 @@
 	DatumGetIntervalP(DirectFunctionCall3(interval_in, CStringGetDatum("1 hour"), InvalidOid, -1))
 
 #define POLICY_COMPRESSION_PROC_NAME "policy_compression"
+#define POLICY_COMPRESSION_CHECK_NAME "policy_compression_check"
 #define POLICY_RECOMPRESSION_PROC_NAME "policy_recompression"
 #define CONFIG_KEY_HYPERTABLE_ID "hypertable_id"
 #define CONFIG_KEY_COMPRESS_AFTER "compress_after"
@@ -173,7 +174,7 @@ Datum
 policy_compression_add(PG_FUNCTION_ARGS)
 {
 	NameData application_name;
-	NameData proc_name, proc_schema, owner;
+	NameData proc_name, proc_schema, owner, check_name, check_schema;
 	int32 job_id;
 	Oid user_rel_oid = PG_GETARG_OID(0);
 	Datum compress_after_datum = PG_GETARG_DATUM(1);
@@ -252,6 +253,8 @@ policy_compression_add(PG_FUNCTION_ARGS)
 	namestrcpy(&proc_name, POLICY_COMPRESSION_PROC_NAME);
 	namestrcpy(&proc_schema, INTERNAL_SCHEMA_NAME);
 	namestrcpy(&owner, GetUserNameFromId(owner_id, false));
+	namestrcpy(&check_name, POLICY_COMPRESSION_CHECK_NAME);
+	namestrcpy(&check_schema, INTERNAL_SCHEMA_NAME);
 
 	JsonbParseState *parse_state = NULL;
 

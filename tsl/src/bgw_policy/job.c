@@ -382,6 +382,12 @@ policy_refresh_cagg_read_and_validate_config(Jsonb *config, PolicyContinuousAggD
 	}
 }
 
+static void
+custom_action_read_and_validate_config(Oid check_function, Jsonb* config)
+{
+
+}
+
 /*
  * Invoke recompress_chunk via fmgr so that the call can be deparsed and sent to
  * remote data nodes.
@@ -691,5 +697,10 @@ job_config_check(Name proc_schema, Name proc_name, Jsonb *config)
 		}
 		else if (namestrcmp(proc_name, "policy_refresh_continuous_aggregate") == 0)
 			policy_refresh_cagg_read_and_validate_config(config, NULL);
+		else
+		{
+			// find the job by its 
+			custom_action_read_and_validate_config(job->config_check, config);
+		}
 	}
 }

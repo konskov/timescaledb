@@ -50,6 +50,8 @@
 #define CONFIG_KEY_INDEX_NAME "index_name"
 
 #define POLICY_REORDER_PROC_NAME "policy_reorder"
+#define POLICY_REORDER_CHECK_NAME "policy_reorder_check"
+
 
 int32
 policy_reorder_get_hypertable_id(const Jsonb *config)
@@ -122,7 +124,7 @@ Datum
 policy_reorder_add(PG_FUNCTION_ARGS)
 {
 	NameData application_name;
-	NameData proc_name, proc_schema, owner;
+	NameData proc_name, proc_schema, owner, check_name, check_schema;
 	int32 job_id;
 	const Dimension *dim;
 	Interval schedule_interval = DEFAULT_SCHEDULE_INTERVAL;
@@ -222,6 +224,8 @@ policy_reorder_add(PG_FUNCTION_ARGS)
 	namestrcpy(&proc_name, POLICY_REORDER_PROC_NAME);
 	namestrcpy(&proc_schema, INTERNAL_SCHEMA_NAME);
 	namestrcpy(&owner, GetUserNameFromId(owner_id, false));
+	namestrcpy(&check_name, POLICY_REORDER_CHECK_NAME);
+	namestrcpy(&check_schema, INTERNAL_SCHEMA_NAME);
 
 	JsonbParseState *parse_state = NULL;
 
@@ -238,6 +242,8 @@ policy_reorder_add(PG_FUNCTION_ARGS)
 										DEFAULT_RETRY_PERIOD,
 										&proc_schema,
 										&proc_name,
+										&check_schema,
+										&check_name,
 										&owner,
 										true,
 										hypertable_id,

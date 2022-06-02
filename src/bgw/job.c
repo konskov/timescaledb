@@ -991,7 +991,7 @@ ts_bgw_job_run_and_set_next_start(BgwJob *job, job_main_func func, int64 initial
 int
 ts_bgw_job_insert_relation(Name application_name, Interval *schedule_interval,
 						   Interval *max_runtime, int32 max_retries, Interval *retry_period,
-						   Name proc_schema, Name proc_name, Name owner, bool scheduled,
+						   Name proc_schema, Name proc_name, Name check_schema, Name check_name, Name owner, bool scheduled,
 						   int32 hypertable_id, Jsonb *config)
 {
 	Catalog *catalog = ts_catalog_get();
@@ -1014,6 +1014,11 @@ ts_bgw_job_insert_relation(Name application_name, Interval *schedule_interval,
 
 	values[AttrNumberGetAttrOffset(Anum_bgw_job_proc_schema)] = NameGetDatum(proc_schema);
 	values[AttrNumberGetAttrOffset(Anum_bgw_job_proc_name)] = NameGetDatum(proc_name);
+	// take care, these here could be NULL in case the user didn't want to provide
+	// a custom check function
+	// to show NULL-ness, we will pass a zero-length Name, and check for length here
+	values[AttrNumberGetAttrOffset(Anum_bgw_job_check_schema)] = NameGetDatum(check_schema);
+	values[AttrNumberGetAttrOffset(Anum_bgw_job_check_name)] = NameGetDatum(check_name);
 	values[AttrNumberGetAttrOffset(Anum_bgw_job_owner)] = NameGetDatum(owner);
 	values[AttrNumberGetAttrOffset(Anum_bgw_job_scheduled)] = BoolGetDatum(scheduled);
 	if (hypertable_id == 0)

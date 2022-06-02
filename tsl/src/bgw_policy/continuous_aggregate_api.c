@@ -26,6 +26,7 @@
 #include "time_utils.h"
 
 #define POLICY_REFRESH_CAGG_PROC_NAME "policy_refresh_continuous_aggregate"
+#define POLICY_REFRESH_CAGG_CHECK_NAME "policy_check_continuous_aggregate"
 #define CONFIG_KEY_MAT_HYPERTABLE_ID "mat_hypertable_id"
 #define CONFIG_KEY_START_OFFSET "start_offset"
 #define CONFIG_KEY_END_OFFSET "end_offset"
@@ -529,7 +530,7 @@ Datum
 policy_refresh_cagg_add(PG_FUNCTION_ARGS)
 {
 	NameData application_name;
-	NameData proc_name, proc_schema, owner;
+	NameData proc_name, proc_schema, owner, check_schema, check_name;
 	ContinuousAgg *cagg;
 	CaggPolicyConfig policyconf;
 	int32 job_id;
@@ -613,6 +614,8 @@ policy_refresh_cagg_add(PG_FUNCTION_ARGS)
 	namestrcpy(&proc_name, POLICY_REFRESH_CAGG_PROC_NAME);
 	namestrcpy(&proc_schema, INTERNAL_SCHEMA_NAME);
 	namestrcpy(&owner, GetUserNameFromId(owner_id, false));
+	namestrcpy(&check_name, POLICY_REFRESH_CAGG_CHECK_NAME);
+	namestrcpy(&check_schema, INTERNAL_SCHEMA_NAME);
 
 	pushJsonbValue(&parse_state, WJB_BEGIN_OBJECT, NULL);
 	ts_jsonb_add_int32(parse_state, CONFIG_KEY_MAT_HYPERTABLE_ID, cagg->data.mat_hypertable_id);
@@ -641,6 +644,8 @@ policy_refresh_cagg_add(PG_FUNCTION_ARGS)
 										&refresh_interval,
 										&proc_schema,
 										&proc_name,
+										&check_schema,
+										&check_name,
 										&owner,
 										true,
 										cagg->data.mat_hypertable_id,
