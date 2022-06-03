@@ -43,14 +43,18 @@ typedef struct CrossModuleFunctions
 	PGFunction policy_compression_add;
 	PGFunction policy_compression_remove;
 	PGFunction policy_recompression_proc;
+	PGFunction policy_compression_check;
 	PGFunction policy_refresh_cagg_add;
 	PGFunction policy_refresh_cagg_proc;
+	PGFunction policy_refresh_cagg_check;
 	PGFunction policy_refresh_cagg_remove;
 	PGFunction policy_reorder_add;
 	PGFunction policy_reorder_proc;
+	PGFunction policy_reorder_check;
 	PGFunction policy_reorder_remove;
 	PGFunction policy_retention_add;
 	PGFunction policy_retention_proc;
+	PGFunction policy_retention_check;
 	PGFunction policy_retention_remove;
 
 	PGFunction job_add;
