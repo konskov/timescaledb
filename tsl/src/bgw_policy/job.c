@@ -202,85 +202,6 @@ check_valid_index(Hypertable *ht, const char *index_name)
 	ReleaseSysCache(idxtuple);
 }
 
-void
-policy_reorder_validate(int32 job_id, Jsonb *config)
-{
-	int32 htid = policy_reorder_get_hypertable_id(config);
-	Hypertable *ht = ts_hypertable_get_by_id(htid);
-	if (!ht)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("configuration hypertable id %d not found", htid)));
-
-	check_valid_index(ht, policy_reorder_get_index_name(config));
-}
-
-
-void
-policy_retention_validate(int32 job_id, Jsonb *config)
-{
-	Oid object_relid;
-	Hypertable *hypertable;
-	Cache *hcache;
-	const Dimension *open_dim;
-
-	object_relid = ts_hypertable_id_to_relid(policy_retention_get_hypertable_id(config));
-	hypertable = ts_hypertable_cache_get_cache_and_entry(object_relid, CACHE_FLAG_NONE, &hcache);
-	open_dim = get_open_dimension_for_hypertable(hypertable);
-
-	/* We only care about the errors from this function, so we ignore the
-	 * return value. */
-	get_window_boundary(open_dim,
-						config,
-						policy_retention_get_drop_after_int,
-						policy_retention_get_drop_after_interval);
-
-	ts_cache_release(hcache);
-}
-
-void
-policy_refresh_cagg_validate(int32 job_id, Jsonb *config)
-{
-	int32 materialization_id;
-	Hypertable *mat_ht;
-	const Dimension *open_dim;
-	Oid dim_type;
-	int64 refresh_start, refresh_end;
-
-	materialization_id = policy_continuous_aggregate_get_mat_hypertable_id(config);
-	mat_ht = ts_hypertable_get_by_id(materialization_id);
-	open_dim = get_open_dimension_for_hypertable(mat_ht);
-	dim_type = ts_dimension_get_partition_type(open_dim);
-	refresh_start = policy_refresh_cagg_get_refresh_start(open_dim, config);
-	refresh_end = policy_refresh_cagg_get_refresh_end(open_dim, config);
-
-	if (refresh_start >= refresh_end)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("invalid refresh window"),
-				 errdetail("start_offset: %s, end_offset: %s",
-						   ts_internal_to_time_string(refresh_start, dim_type),
-						   ts_internal_to_time_string(refresh_end, dim_type)),
-				 errhint("The start of the window must be before the end.")));
-}
-
-void
-policy_compression_validate(int32 job_id, Jsonb *config)
-{
-	Cache *hcache;
-	Oid table_relid = ts_hypertable_id_to_relid(policy_compression_get_hypertable_id(config));
-	Hypertable *ht = ts_hypertable_cache_get_cache_and_entry(table_relid, CACHE_FLAG_NONE, &hcache);
-	const Dimension *dim = hyperspace_get_open_dimension(ht->space, 0);
-
-	/* We ignore the return value from this function since we just try to read
-	 * the config to see that it does not generate any errors. */
-	get_window_boundary(dim,
-						config,
-						policy_compression_get_compress_after_int,
-						policy_compression_get_compress_after_interval);
-	ts_cache_release(hcache);
-}
-
 bool
 policy_reorder_execute(int32 job_id, Jsonb *config)
 {
@@ -329,13 +250,13 @@ policy_reorder_read_and_validate_config(Jsonb *config, PolicyReorderData *policy
 {
 	int32 htid = policy_reorder_get_hypertable_id(config);
 	Hypertable *ht = ts_hypertable_get_by_id(htid);
-	const char *index_name = policy_reorder_get_index_name(config);
 
 	if (!ht)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("configuration hypertable id %d not found", htid)));
 
+	const char *index_name = policy_reorder_get_index_name(config);
 	check_valid_index(ht, index_name);
 
 	if (policy)
@@ -748,27 +669,4 @@ job_execute(BgwJob *job)
 	}
 
 	return true;
-}
-
-/*
- * Check configuration for a job type.
- */
-void
-job_config_check(Name proc_schema, Name proc_name, Jsonb *config)
-{
-	if (namestrcmp(proc_schema, INTERNAL_SCHEMA_NAME) == 0)
-	{
-		if (namestrcmp(proc_name, "policy_retention") == 0)
-			policy_retention_read_and_validate_config(config, NULL);
-		else if (namestrcmp(proc_name, "policy_reorder") == 0)
-			policy_reorder_read_and_validate_config(config, NULL);
-		else if (namestrcmp(proc_name, "policy_compression") == 0)
-		{
-			PolicyCompressionData policy_data;
-			policy_compression_read_and_validate_config(config, &policy_data);
-			ts_cache_release(policy_data.hcache);
-		}
-		else if (namestrcmp(proc_name, "policy_refresh_continuous_aggregate") == 0)
-			policy_refresh_cagg_read_and_validate_config(config, NULL);
-	}
 }

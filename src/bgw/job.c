@@ -100,16 +100,49 @@ job_execute_procedure(FuncExpr *funcexpr)
 	ExecuteCallStmt(call, params, false, dest);
 }
 
+/**
+ * Run configuration check validation function.
+ *
+ * This will run the configuration check validation function registered for
+ * the job. If a new job is added, the job_id is going to be zero.
+ */
+void
+ts_bgw_job_run_config_check(Oid check, int32 job_id, Jsonb *config)
+{
+	List *args =
+		list_make2(makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum(job_id), false, true),
+				   makeConst(JSONBOID, -1, InvalidOid, -1, JsonbPGetDatum(config), false, false));
+	FuncExpr *funcexpr =
+		makeFuncExpr(check, VOIDOID, args, InvalidOid, InvalidOid, COERCE_EXPLICIT_CALL);
+
+	/* Nothing to check if there is no check function provided */
+	if (!OidIsValid(check))
+		return;
+
+	switch (get_func_prokind(check))
+	{
+		case PROKIND_FUNCTION:
+			job_execute_function(funcexpr);
+			break;
+		case PROKIND_PROCEDURE:
+			job_execute_procedure(funcexpr);
+			break;
+		default:
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg("unsupported function type")));
+			break;
+	}
+}
+
 /* Run the check function on a configuration. It will generate errors if there
  * is anything wrong with the configuration, otherwise just return. If the
  * check function does not exist, no checking will be done.*/
 static void
-job_config_check_mats(BgwJob *job, Jsonb *config)
+job_config_check(BgwJob *job, Jsonb *config)
 {
 	const Oid proc_args[] = { INT4OID, JSONBOID };
-	List *name, *args;
+	List *name;
 	Oid proc;
-	FuncExpr *funcexpr;
 	bool started = false;
 
 	/* Both should either be empty or contain a schema and name */
@@ -128,27 +161,12 @@ job_config_check_mats(BgwJob *job, Jsonb *config)
 		PushActiveSnapshot(GetTransactionSnapshot());
 	}
 
+	/* We are using LookupFuncName here, which will find functions but not
+	 * procedures. We could use LookupFuncWithArgs here instead. */
 	name = list_make2(makeString(NameStr(job->fd.check_schema)),
 					  makeString(NameStr(job->fd.check_name)));
 	proc = LookupFuncName(name, 2, proc_args, false);
-	args =
-		list_make2(makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum(job->fd.id), false, true),
-				   makeConst(JSONBOID, -1, InvalidOid, -1, JsonbPGetDatum(config), false, false));
-	funcexpr = makeFuncExpr(proc, VOIDOID, args, InvalidOid, InvalidOid, COERCE_EXPLICIT_CALL);
-	switch (get_func_prokind(proc))
-	{
-		case PROKIND_FUNCTION:
-			job_execute_function(funcexpr);
-			break;
-		case PROKIND_PROCEDURE:
-			job_execute_procedure(funcexpr);
-			break;
-		default:
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg("unsupported function type")));
-			break;
-	}
-
+	ts_bgw_job_run_config_check(proc, job->fd.id, config);
 	if (started)
 	{
 		/* if job does its own transaction handling it might not have set a snapshot */
@@ -175,10 +193,6 @@ bgw_job_from_tupleinfo(TupleInfo *ti, size_t alloc_size)
 	Assert(alloc_size >= sizeof(BgwJob));
 	job = MemoryContextAllocZero(ti->mctx, alloc_size);
 	tuple = ts_scanner_fetch_heap_tuple(ti, false, &should_free);
-	memcpy(job, GETSTRUCT(tuple), sizeof(FormData_bgw_job));
-
-	if (should_free)
-		heap_freetuple(tuple);
 
 	/*
 	 * Using heap_deform_tuple instead of GETSTRUCT since the tuple can
@@ -241,6 +255,7 @@ bgw_job_from_tupleinfo(TupleInfo *ti, size_t alloc_size)
 
 	if (!nulls[AttrNumberGetAttrOffset(Anum_bgw_job_config)])
 		job->fd.config = DatumGetJsonbP(values[AttrNumberGetAttrOffset(Anum_bgw_job_config)]);
+
 	MemoryContextSwitchTo(old_ctx);
 	if (should_free)
 		heap_freetuple(tuple);
@@ -328,6 +343,7 @@ ts_bgw_job_get_scheduled(size_t alloc_size, MemoryContext mctx)
 		 * doesn't need these, it saves us from detoasting, and simplifies
 		 * freeing job lists in the scheduler as otherwise the config field
 		 * would have to be freed separately when freeing a job. */
+		job->fd.config = NULL;
 
 		old_ctx = MemoryContextSwitchTo(mctx);
 		jobs = lappend(jobs, job);
@@ -768,10 +784,7 @@ bgw_job_tuple_update_by_id(TupleInfo *ti, void *const data)
 	repl[AttrNumberGetAttrOffset(Anum_bgw_job_config)] = true;
 	if (updated_job->fd.config)
 	{
-		// ts_cm_functions->job_config_check(&updated_job->fd.proc_schema,
-		// 								  &updated_job->fd.proc_name,
-		// 								  updated_job->fd.config);
-		job_config_check_mats(bgw_job_from_tupleinfo(ti, sizeof(BgwJob)), updated_job->fd.config);
+		job_config_check(bgw_job_from_tupleinfo(ti, sizeof(BgwJob)), updated_job->fd.config);
 		values[AttrNumberGetAttrOffset(Anum_bgw_job_config)] =
 			JsonbPGetDatum(updated_job->fd.config);
 	}
@@ -1131,10 +1144,11 @@ ts_bgw_job_run_and_set_next_start(BgwJob *job, job_main_func func, int64 initial
 	return ret;
 }
 
-int ts_bgw_job_insert_relation(
-	Name application_name, Interval *schedule_interval, Interval *max_runtime,
-	int32 max_retries, Interval *retry_period, Name proc_schema, Name proc_name, Name check_schema,
-	Name check_name, Name owner, bool scheduled, int32 hypertable_id, Jsonb *config)
+int
+ts_bgw_job_insert_relation(Name application_name, Interval *schedule_interval,
+						   Interval *max_runtime, int32 max_retries, Interval *retry_period,
+						   Name proc_schema, Name proc_name, Name check_schema, Name check_name,
+						   Name owner, bool scheduled, int32 hypertable_id, Jsonb *config)
 {
 	Catalog *catalog = ts_catalog_get();
 	Relation rel;

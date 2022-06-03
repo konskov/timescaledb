@@ -26,7 +26,7 @@
 #include "time_utils.h"
 
 #define POLICY_REFRESH_CAGG_PROC_NAME "policy_refresh_continuous_aggregate"
-#define POLICY_REFRESH_CAGG_CHECK_NAME "policy_check_continuous_aggregate"
+#define POLICY_REFRESH_CAGG_CHECK_NAME "policy_refresh_continuous_aggregate_check"
 #define CONFIG_KEY_MAT_HYPERTABLE_ID "mat_hypertable_id"
 #define CONFIG_KEY_START_OFFSET "start_offset"
 #define CONFIG_KEY_END_OFFSET "end_offset"
@@ -226,7 +226,7 @@ policy_refresh_cagg_check(PG_FUNCTION_ARGS)
 	if (PG_NARGS() != 2 || PG_ARGISNULL(0) || PG_ARGISNULL(1))
 		PG_RETURN_VOID();
 
-	policy_refresh_cagg_validate(PG_GETARG_INT32(0), PG_GETARG_JSONB_P(1));
+	policy_refresh_cagg_read_and_validate_config(PG_GETARG_JSONB_P(1), NULL);
 
 	PG_RETURN_VOID();
 }

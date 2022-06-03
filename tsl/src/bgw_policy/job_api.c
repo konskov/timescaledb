@@ -82,7 +82,7 @@ job_add(PG_FUNCTION_ARGS)
 				 errmsg("permission denied for function \"%s\"", func_name),
 				 errhint("Job owner must have EXECUTE privilege on the function.")));
 
-	if (check != InvalidOid)
+	if (OidIsValid(check))
 	{
 		check_name_str = get_func_name(check);
 		if (check_name_str == NULL)
@@ -110,7 +110,7 @@ job_add(PG_FUNCTION_ARGS)
 	namestrcpy(&owner_name, GetUserNameFromId(owner, false));
 
 	if (config)
-		job_config_check(&proc_schema, &proc_name, config);
+		ts_bgw_job_run_config_check(check, 0, config);
 
 	job_id = ts_bgw_job_insert_relation(&application_name,
 										schedule_interval,
@@ -125,7 +125,6 @@ job_add(PG_FUNCTION_ARGS)
 										scheduled,
 										0,
 										config);
-
 	if (!PG_ARGISNULL(3))
 	{
 		TimestampTz initial_start = PG_GETARG_TIMESTAMPTZ(3);

@@ -114,7 +114,7 @@ policy_reorder_check(PG_FUNCTION_ARGS)
 
 	TS_PREVENT_FUNC_IF_READ_ONLY();
 
-	policy_reorder_validate(PG_GETARG_INT32(0), PG_GETARG_JSONB_P(1));
+	policy_reorder_read_and_validate_config(PG_GETARG_JSONB_P(1), NULL);
 
 	PG_RETURN_VOID();
 }

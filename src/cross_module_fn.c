@@ -176,13 +176,6 @@ job_execute_default_fn(BgwJob *job)
 	pg_unreachable();
 }
 
-static void
-job_config_check_default_fn(Name proc_schema, Name proc_name, Jsonb *config)
-{
-	error_no_default_fn_community();
-	pg_unreachable();
-}
-
 static bool
 process_compress_table_default(AlterTableCmd *cmd, Hypertable *ht,
 							   WithClauseResult *with_clause_options)
@@ -401,7 +394,6 @@ TSDLLEXPORT CrossModuleFunctions ts_cm_functions_default = {
 	.job_delete = error_no_default_fn_pg_community,
 	.job_run = error_no_default_fn_pg_community,
 	.job_execute = job_execute_default_fn,
-	.job_config_check = job_config_check_default_fn,
 
 	.move_chunk = error_no_default_fn_pg_community,
 	.move_chunk_proc = error_no_default_fn_pg_community,

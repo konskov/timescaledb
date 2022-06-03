@@ -174,7 +174,11 @@ policy_compression_check(PG_FUNCTION_ARGS)
 {
 	if (PG_NARGS() != 2 || PG_ARGISNULL(0) || PG_ARGISNULL(1))
 		PG_RETURN_VOID();
-	policy_compression_validate(PG_GETARG_INT32(0), PG_GETARG_JSONB_P(1));
+
+	PolicyCompressionData policy_data;
+	policy_compression_read_and_validate_config(PG_GETARG_JSONB_P(1), &policy_data);
+	ts_cache_release(policy_data.hcache);
+
 	PG_RETURN_VOID();
 }
 
