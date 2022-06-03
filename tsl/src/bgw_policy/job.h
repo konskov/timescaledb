@@ -49,9 +49,13 @@ typedef void (*reorder_func)(Oid tableOid, Oid indexOid, bool verbose, Oid wait_
 
 /* Functions exposed only for testing */
 extern bool policy_reorder_execute(int32 job_id, Jsonb *config);
+extern void policy_reorder_validate(int32 job_id, Jsonb *config);
 extern bool policy_retention_execute(int32 job_id, Jsonb *config);
+extern void policy_retention_validate(int32 job_id, Jsonb *config);
 extern bool policy_refresh_cagg_execute(int32 job_id, Jsonb *config);
+extern void policy_refresh_cagg_validate(int32 job_id, Jsonb *config);
 extern bool policy_recompression_execute(int32 job_id, Jsonb *config);
+extern void policy_compression_validate(int32 job_id, Jsonb *config);
 extern void policy_reorder_read_and_validate_config(Jsonb *config, PolicyReorderData *policy_data);
 extern void policy_retention_read_and_validate_config(Jsonb *config,
 													  PolicyRetentionData *policy_data);
@@ -63,5 +67,6 @@ extern void policy_recompression_read_and_validate_config(Jsonb *config,
 														  PolicyCompressionData *policy_data);
 extern bool job_execute(BgwJob *job);
 extern void job_config_check(Name proc_schema, Name proc_name, Jsonb *config);
+// extern void job_config_check_mats(BgwJob *job, Jsonb *config);
 
 #endif /* TIMESCALEDB_TSL_BGW_POLICY_JOB_H */

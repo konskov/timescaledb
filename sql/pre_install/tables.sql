@@ -202,6 +202,10 @@ MINVALUE 1000;
 
 SELECT pg_catalog.pg_extension_config_dump('_timescaledb_config.bgw_job_id_seq', '');
 
+  -- We put columns that can be null or have variable length
+  -- last. This allow us to read the important fields above in the
+  -- scheduler without materializing these fields below, which the
+  -- scheduler does not neeed.
 CREATE TABLE _timescaledb_config.bgw_job (
   id integer PRIMARY KEY DEFAULT nextval('_timescaledb_config.bgw_job_id_seq'),
   application_name name NOT NULL,
@@ -214,7 +218,9 @@ CREATE TABLE _timescaledb_config.bgw_job (
   owner name NOT NULL DEFAULT CURRENT_ROLE,
   scheduled bool NOT NULL DEFAULT TRUE,
   hypertable_id integer REFERENCES _timescaledb_catalog.hypertable (id) ON DELETE CASCADE,
-  config jsonb
+  config jsonb,
+  check_schema name,
+  check_name name
 );
 
 ALTER SEQUENCE _timescaledb_config.bgw_job_id_seq OWNED BY _timescaledb_config.bgw_job.id;

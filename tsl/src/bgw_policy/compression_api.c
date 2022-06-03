@@ -38,6 +38,7 @@
 	DatumGetIntervalP(DirectFunctionCall3(interval_in, CStringGetDatum("1 hour"), InvalidOid, -1))
 
 #define POLICY_COMPRESSION_PROC_NAME "policy_compression"
+#define POLICY_COMPRESSION_CHECK_NAME "policy_compression_check"
 #define POLICY_RECOMPRESSION_PROC_NAME "policy_recompression"
 #define CONFIG_KEY_HYPERTABLE_ID "hypertable_id"
 #define CONFIG_KEY_COMPRESS_AFTER "compress_after"
@@ -168,12 +169,21 @@ validate_compress_after_type(Oid partitioning_type, Oid compress_after_type)
 	}
 }
 
+Datum
+policy_compression_check(PG_FUNCTION_ARGS)
+{
+	if (PG_NARGS() != 2 || PG_ARGISNULL(0) || PG_ARGISNULL(1))
+		PG_RETURN_VOID();
+	policy_compression_validate(PG_GETARG_INT32(0), PG_GETARG_JSONB_P(1));
+	PG_RETURN_VOID();
+}
+
 /* compression policies are added to hypertables or continuous aggregates */
 Datum
 policy_compression_add(PG_FUNCTION_ARGS)
 {
 	NameData application_name;
-	NameData proc_name, proc_schema, owner;
+	NameData proc_name, proc_schema, check_schema, check_name, owner;
 	int32 job_id;
 	Oid user_rel_oid = PG_GETARG_OID(0);
 	Datum compress_after_datum = PG_GETARG_DATUM(1);
@@ -251,6 +261,8 @@ policy_compression_add(PG_FUNCTION_ARGS)
 	namestrcpy(&application_name, "Compression Policy");
 	namestrcpy(&proc_name, POLICY_COMPRESSION_PROC_NAME);
 	namestrcpy(&proc_schema, INTERNAL_SCHEMA_NAME);
+	namestrcpy(&check_name, POLICY_COMPRESSION_CHECK_NAME);
+	namestrcpy(&check_schema, INTERNAL_SCHEMA_NAME);
 	namestrcpy(&owner, GetUserNameFromId(owner_id, false));
 
 	JsonbParseState *parse_state = NULL;
@@ -312,6 +324,8 @@ policy_compression_add(PG_FUNCTION_ARGS)
 										DEFAULT_RETRY_PERIOD,
 										&proc_schema,
 										&proc_name,
+										&check_schema,
+										&check_name,
 										&owner,
 										true,
 										hypertable->fd.id,
