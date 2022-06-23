@@ -498,20 +498,48 @@ GRANT SELECT ON ALL SEQUENCES IN SCHEMA _timescaledb_config TO PUBLIC;
 
 GRANT SELECT ON ALL SEQUENCES IN SCHEMA _timescaledb_internal TO PUBLIC;
 
--- find the database owner and grant them the required privileges to access 
--- table _timescaledb_catalog.metadata to do the dump/restore operations
-DO 
-$$
-DECLARE
-    db_owner TEXT;
+-- this will be public. can't think of anything else
+-- GRANT INSERT, UPDATE, DELETE ON _timescaledb_catalog.metadata TO PUBLIC;
+-- and put trigger on it that only allows database owner or superuser 
+-- to INSERT, UPDATE, DELETE
+
+CREATE OR REPLACE FUNCTION verify_user_privileges_catalog_metadata()
+RETURNS TRIGGER AS $$
+DECLARE 
+  is_superuser bool;
+  is_owner bool;
 BEGIN
-    SELECT pg_catalog.pg_get_userbyid(d.datdba) AS db_owner
-    FROM pg_catalog.pg_database d
-    WHERE d.datname = current_database()
-    ORDER BY db_owner
-    INTO db_owner;
-    IF FOUND THEN
-      EXECUTE format('GRANT SELECT, UPDATE, INSERT, DELETE ON _timescaledb_catalog.metadata TO %I', db_owner);
-    END IF;
-END
-$$ LANGUAGE plpgsql;
+  select usesuper from pg_user where usename = CURRENT_USER INTO is_superuser;
+  select current_user in 
+  (select pg_catalog.pg_get_userbyid(d.datdba) as db_owner 
+  from pg_catalog.pg_database d where d.datname = current_database()) into is_owner;
+
+  IF NOT is_superuser AND NOT is_owner THEN
+    raise EXCEPTION 'Insufficient privileges for table: _timescaledb_catalog.metadata';
+  END IF;
+
+  RETURN NULL;
+END $$ language plpgsql;
+
+CREATE TRIGGER trigger_verify_user_privileges_catalog_metadata
+  BEFORE UPDATE OR INSERT OR DELETE ON _timescaledb_catalog.metadata
+  FOR EACH STATEMENT
+  EXECUTE FUNCTION verify_user_privileges_catalog_metadata();
+
+-- -- find the database owner and grant them the required privileges to access 
+-- -- table _timescaledb_catalog.metadata to do the dump/restore operations
+-- DO 
+-- $$
+-- DECLARE
+--     db_owner TEXT;
+-- BEGIN
+--     SELECT pg_catalog.pg_get_userbyid(d.datdba) AS db_owner
+--     FROM pg_catalog.pg_database d
+--     WHERE d.datname = current_database()
+--     ORDER BY db_owner
+--     INTO db_owner;
+--     IF FOUND THEN
+--       EXECUTE format('GRANT SELECT, UPDATE, INSERT, DELETE ON _timescaledb_catalog.metadata TO %I', db_owner);
+--     END IF;
+-- END
+-- $$ LANGUAGE plpgsql;
