@@ -10,6 +10,7 @@
 #include <catalog/pg_authid.h>
 #include <nodes/makefuncs.h>
 #include <parser/parse_func.h>
+#include <parser/parser.h>
 #include <postmaster/bgworker.h>
 #include <storage/ipc.h>
 #include <tcop/tcopprot.h>
@@ -110,8 +111,7 @@ void
 ts_bgw_job_run_config_check(Oid check, int32 job_id, Jsonb *config)
 {
 	List *args =
-		list_make2(makeConst(INT4OID, -1, InvalidOid, 4, Int32GetDatum(job_id), false, true),
-				   makeConst(JSONBOID, -1, InvalidOid, -1, JsonbPGetDatum(config), false, false));
+		list_make1(makeConst(JSONBOID, -1, InvalidOid, -1, JsonbPGetDatum(config), false, false));
 	FuncExpr *funcexpr =
 		makeFuncExpr(check, VOIDOID, args, InvalidOid, InvalidOid, COERCE_EXPLICIT_CALL);
 
@@ -140,9 +140,8 @@ ts_bgw_job_run_config_check(Oid check, int32 job_id, Jsonb *config)
 static void
 job_config_check(BgwJob *job, Jsonb *config)
 {
-	const Oid proc_args[] = { INT4OID, JSONBOID };
-	List *name;
 	Oid proc;
+	ObjectWithArgs *object;
 	bool started = false;
 
 	/* Both should either be empty or contain a schema and name */
@@ -163,9 +162,13 @@ job_config_check(BgwJob *job, Jsonb *config)
 
 	/* We are using LookupFuncName here, which will find functions but not
 	 * procedures. We could use LookupFuncWithArgs here instead. */
-	name = list_make2(makeString(NameStr(job->fd.check_schema)),
-					  makeString(NameStr(job->fd.check_name)));
-	proc = LookupFuncName(name, 2, proc_args, false);
+	object = makeNode(ObjectWithArgs);
+
+	object->objname = list_make2(makeString(NameStr(job->fd.check_schema)),
+								 makeString(NameStr(job->fd.check_name)));
+	object->objargs = list_make1(SystemTypeName("jsonb"));
+	proc = LookupFuncWithArgs(OBJECT_ROUTINE, object, false);
+
 	ts_bgw_job_run_config_check(proc, job->fd.id, config);
 	if (started)
 	{

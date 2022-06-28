@@ -72,7 +72,7 @@ ALTER TABLE _timescaledb_internal.bgw_policy_chunk_stats
           ON DELETE CASCADE;
 
 DROP FUNCTION IF EXISTS @extschema@.add_job;
-DROP FUNCTION IF EXISTS _timescaledb_internal.policy_retention_check(INTEGER, JSONB);
-DROP FUNCTION IF EXISTS _timescaledb_internal.policy_compression_check(INTEGER, JSONB);
-DROP FUNCTION IF EXISTS _timescaledb_internal.policy_reorder_check(INTEGER, JSONB);
-DROP FUNCTION IF EXISTS _timescaledb_internal.policy_refresh_continuous_aggregate_check(INTEGER, JSONB);
+DROP FUNCTION IF EXISTS _timescaledb_internal.policy_retention_check(JSONB);
+DROP FUNCTION IF EXISTS _timescaledb_internal.policy_compression_check(JSONB);
+DROP FUNCTION IF EXISTS _timescaledb_internal.policy_reorder_check(JSONB);
+DROP FUNCTION IF EXISTS _timescaledb_internal.policy_refresh_continuous_aggregate_check(JSONB);
