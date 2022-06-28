@@ -1,0 +1,22 @@
+Parsed test spec with 2 sessions
+
+starting permutation: Sinit_func Sinit_addjob Sb D1 S1 Sc
+step Sinit_func: 
+    CREATE OR REPLACE FUNCTION test_config_check_func(config jsonb) RETURNS VOID
+    AS $$
+    BEGIN 
+        perform least(1, 2);
+    END
+    $$ LANGUAGE PLPGSQL;
+
+step Sinit_addjob: select add_job('test_proc_with_check', '5 secs', config => NULL, check_config => 'test_config_check_func'::regproc);
+add_job
+-------
+   1000
+(1 row)
+
+step Sb: BEGIN;
+step D1: DROP FUNCTION IF EXISTS test_config_check_func;
+step S1: select add_job('test_proc_with_check', '5 secs', config => NULL, check_config => 'test_config_check_func'::regproc);
+ERROR:  function with OID XXX does not exist
+step Sc: COMMIT;

@@ -12,5 +12,5 @@ ISOLATIONTEST=$1
 shift
 
 $ISOLATIONTEST "$@" | \
-   sed -e 's!_[0-9]\{1,\}_[0-9]\{1,\}_chunk!_X_X_chunk!g'
- 
+   sed -e 's!_[0-9]\{1,\}_[0-9]\{1,\}_chunk!_X_X_chunk!g' -e 's/function with OID [0-9]\{1,\} does not exist/function with OID XXX does not exist/g'
+

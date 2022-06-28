@@ -32,7 +32,8 @@ list(
   cagg_multi.spec
   cagg_concurrent_refresh.spec
   cagg_concurrent_refresh_dist_ht.spec
-  deadlock_drop_chunks_compress.spec)
+  deadlock_drop_chunks_compress.spec
+  addjob_with_dropped_check.spec)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
   list(APPEND TEST_TEMPLATES_MODULE ${TEST_TEMPLATES_MODULE_DEBUG})
