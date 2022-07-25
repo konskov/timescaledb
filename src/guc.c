@@ -72,6 +72,7 @@ bool ts_guc_enable_async_append = true;
 TSDLLEXPORT bool ts_guc_enable_skip_scan = true;
 int ts_guc_max_open_chunks_per_insert = 10;
 int ts_guc_max_cached_chunks_per_hypertable = 10;
+int ts_max_simultaneous_cagg_updates_per_hypertable = 0;
 #ifdef USE_TELEMETRY
 int ts_guc_telemetry_level = TELEMETRY_DEFAULT;
 char *ts_telemetry_cloud = NULL;
@@ -104,6 +105,7 @@ assign_max_cached_chunks_per_hypertable_hook(int newval, void *extra)
 void
 _guc_init(void)
 {
+	// elog(LOG, "now calling __guc_init in src/guc.c, line 108");
 	/* Main database to connect to. */
 	DefineCustomBoolVariable("timescaledb.enable_optimizations",
 							 "Enable TimescaleDB query optimizations",
@@ -449,6 +451,19 @@ _guc_init(void)
 							   /* check_hook= */ NULL,
 							   /* assign_hook= */ NULL,
 							   /* show_hook= */ NULL);
+	
+	DefineCustomIntVariable("timescaledb.max_simultaneous_cagg_updates_per_hypertable",
+							"Maximum concurrent cagg refreshes per hypertable",
+							"Maximum number of scheduled (via policy) continuous aggregate refreshes that can run concurrently on the same hypertable",
+							&ts_max_simultaneous_cagg_updates_per_hypertable,
+							ts_max_simultaneous_cagg_updates_per_hypertable /* disabledb by default */,
+							0,
+							PG_INT32_MAX,
+							PGC_USERSET,
+							0,
+							/*check_hook*/NULL,
+							/*assign_hook*/NULL,
+							/*show_hook*/NULL);
 
 #ifdef USE_TELEMETRY
 	DefineCustomStringVariable(/* name= */ "timescaledb_telemetry.cloud",

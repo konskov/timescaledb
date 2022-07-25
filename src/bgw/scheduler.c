@@ -29,6 +29,8 @@
 #include <pgstat.h>
 #include <tcop/tcopprot.h>
 #include <nodes/pg_list.h>
+#include <utils/builtins.h> // namestrcmp
+#include <unistd.h>
 
 #include "compat/compat.h"
 #include "extension.h"
@@ -40,6 +42,7 @@
 #include "timer.h"
 #include "version.h"
 #include "worker.h"
+#include "hypertable.h"
 
 #define SCHEDULER_APPNAME "TimescaleDB Background Worker Scheduler"
 #define START_RETRY_MS (1 * INT64CONST(1000)) /* 1 seconds */
@@ -49,6 +52,8 @@ least_timestamp(TimestampTz left, TimestampTz right)
 {
 	return (left < right ? left : right);
 }
+
+int ts_max_simultaneous_cagg_updates_per_hypertable; 
 
 TS_FUNCTION_INFO_V1(ts_bgw_scheduler_main);
 
@@ -108,13 +113,159 @@ typedef struct ScheduledBgwJob
 	bool may_need_mark_end;
 } ScheduledBgwJob;
 
+typedef struct CaggRefreshHashEntry
+{
+	int ncagg_updates_ongoing;
+} CaggRefreshHashEntry;
+
+typedef struct ConcurrentCaggRefreshCounterState
+{
+	slock_t mutex; /* controls modification of the hash table */
+	HTAB *htab; /* (ht_id, n_caggs) */
+} ConcurrentCaggRefreshCounterState;
+
+static ConcurrentCaggRefreshCounterState cagg_refresh_counter;
+
+/*
+ * Initialize the database's hash table that keeps track of 
+ * concurrent ongoing scheduled continuous aggregate refreshes 
+ * per hypertable
+ */
+static HTAB *
+init_scheduler_cagg_refresh_htab(void)
+{
+	/* key: hypertable_id, entry: number of currently executing cagg refresh policies per hypertable */
+	HASHCTL hctl = { .keysize = sizeof(int32), .entrysize = sizeof(CaggRefreshHashEntry), .hcxt = CurrentMemoryContext };
+
+	elog(LOG, "memory context of cagg_refresh_htab creation is %s", CurrentMemoryContext->name);
+	/* maybe HTAB is not a good idea, because we would need to limit/predefine the 
+	 number of hypertables that can have continuous aggregates set up */
+	return hash_create("scheduler_cagg_refresh_htab",
+					   100, /* start with 10 tablespaces */
+					   &hctl,
+					   HASH_BLOBS | HASH_ELEM | HASH_CONTEXT);
+}
+
+
+/* check application name matches 
+because we append the job_id after the application name,
+we have to do some ugly string manipulation here
+dont know if there is a better way */
+static bool job_is_cagg_refresh(ScheduledBgwJob *job)
+{
+	elog(LOG, "IN %s", __func__);
+	elog(LOG, "application name is: %s", job->job.fd.application_name.data);
+	elog(LOG, "in %s, memory context is %s", __func__, CurrentMemoryContext->name);
+	char *trunc_appname;
+	trunc_appname = strstr(job->job.fd.application_name.data, "Refresh Continuous Aggregate Policy");
+	// if (trunc_appname != NULL)
+	// 	elog(LOG, "trunc_appname is %s", trunc_appname);
+	return (trunc_appname != NULL);
+	// return (namestrcmp(&job->job.fd.application_name, "Refresh Continuous Aggregate Policy") == 0);
+}
+
+// return true if we were were not able to insert, 
+// because we have reached the maximum number of allowed caggs
+// per tablespace and so we have to keep the job waiting
+// false: no need to reschedule, true: reschedule the refresh
+
+// HTAB is updated in the scratchContext of the scheduler - SchedulerScratch
+static bool cagg_refresh_htab_insert(ScheduledBgwJob *job)
+{
+	// do these things in the scheduler mcxt
+	MemoryContext prev_cxt = MemoryContextSwitchTo(scheduler_mctx);
+	// lock it, then insert, then unlock
+	elog(LOG, "in %s, memory context is %s", __func__, CurrentMemoryContext->name);
+	elog(LOG, "in %s, current setting for max_updates: %d", __func__, ts_max_simultaneous_cagg_updates_per_hypertable);
+	bool found_hashentry = true;
+	bool retval = false;
+	HASH_SEQ_STATUS status;
+	CaggRefreshHashEntry *curr_entry;
+
+	// Oid tablespace_oid = InvalidOid;
+	CaggRefreshHashEntry *hash_entry = NULL;
+
+// 		bool continue_sleep = true;
+//    do {
+//        sleep(3);
+//        elog(LOG, "zzzzz %d", MyProcPid);
+//    } while (continue_sleep);
+
+	// if ts_max_simultaneous_cagg_updates_per_hypertable = 0 (disabled) skip the check
+	if (ts_max_simultaneous_cagg_updates_per_hypertable == 0)
+		return false;
+
+	// start with per-hypertable, then move on to tablespace
+	// tablespace_oid = get_tablespace_by_hypertable_id(job->job.fd.hypertable_id);
+
+	SpinLockAcquire(&cagg_refresh_counter.mutex);
+	elog(LOG, "number of entries that htab_insert sees now: %ld", hash_get_num_entries(cagg_refresh_counter.htab));
+	elog(LOG, "search key is %d", job->job.fd.hypertable_id);
+	// now print all the entries in the hash table
+	hash_seq_init(&status, cagg_refresh_counter.htab);
+	while ((curr_entry = hash_seq_search(&status)) != NULL)
+		elog(LOG, "get in the debugger to see it");
+	hash_entry = hash_search(cagg_refresh_counter.htab, &job->job.fd.hypertable_id/*tablespace_oid*/, HASH_FIND, &found_hashentry);
+	if (found_hashentry)
+	{
+		// the ">" can occur if the value of the GUC was updated. 
+		// We will let the currently executing ones finish
+		elog(LOG, "already present entry: hypertable_id %d, ncaggs: %d", job->job.fd.hypertable_id, hash_entry->ncagg_updates_ongoing);
+		if (hash_entry->ncagg_updates_ongoing >= ts_max_simultaneous_cagg_updates_per_hypertable)
+			retval = true;
+	}
+	// insert if hash_entry was previously NULL or if we still have capacity
+	hash_entry = hash_search(cagg_refresh_counter.htab, &job->job.fd.hypertable_id, HASH_ENTER, &found_hashentry);
+	if (found_hashentry)
+		elog(LOG, "a hashentry already existed");
+	else
+	{
+		elog(LOG, "create new hashentry");
+		hash_entry->ncagg_updates_ongoing = 0;
+	}
+	if (hash_entry != NULL)
+		hash_entry->ncagg_updates_ongoing += 1;
+
+	SpinLockRelease(&cagg_refresh_counter.mutex);
+	MemoryContextSwitchTo(prev_cxt);
+
+	return retval;
+}
+
+static void cagg_refresh_htab_remove(ScheduledBgwJob *job)
+{
+	// lock it, then insert, then unlock
+	CaggRefreshHashEntry *hash_entry = NULL;
+	bool found_hashentry;
+	SpinLockAcquire(&cagg_refresh_counter.mutex);
+	elog(LOG, "in %s, ht_id is %d", __func__, job->job.fd.hypertable_id);
+	hash_entry = hash_search(cagg_refresh_counter.htab, &job->job.fd.hypertable_id, HASH_FIND, &found_hashentry);
+	if (hash_entry != NULL)
+	{
+		if (hash_entry->ncagg_updates_ongoing > 1)
+			hash_entry->ncagg_updates_ongoing -= 1;
+		else
+			// remove this entry
+			hash_search(cagg_refresh_counter.htab, &job->job.fd.hypertable_id, HASH_REMOVE, &found_hashentry);
+	}
+	SpinLockRelease(&cagg_refresh_counter.mutex);
+}
+
+static bool limit_concurrent_cagg_updates()
+{
+	elog(LOG, "in %s, guc value is %d", __func__, ts_max_simultaneous_cagg_updates_per_hypertable);
+	return ts_max_simultaneous_cagg_updates_per_hypertable > 0;
+}
+
 static void on_failure_to_start_job(ScheduledBgwJob *sjob);
 
 static volatile sig_atomic_t got_SIGHUP = false;
 
+/* i want to see if this function is called by all bgw workers or only on scheduled jobs */
 BackgroundWorkerHandle *
 ts_bgw_start_worker(const char *name, const BgwParams *bgw_params)
 {
+	elog(LOG, "in %s", __func__);
 	BackgroundWorker worker = {
 		.bgw_flags = BGWORKER_SHMEM_ACCESS | BGWORKER_BACKEND_DATABASE_CONNECTION,
 		.bgw_start_time = BgWorkerStart_RecoveryFinished,
@@ -171,6 +322,7 @@ mark_job_as_ended(ScheduledBgwJob *sjob, JobResult res)
 static void
 worker_state_cleanup(ScheduledBgwJob *sjob)
 {
+	elog(LOG, "IN %s", __func__);
 	/*
 	 * This function needs to be safe wrt failures occurring at any point in
 	 * the job starting process.
@@ -245,6 +397,8 @@ scheduled_bgw_job_transition_state_to(ScheduledBgwJob *sjob, JobState new_state)
 
 	BgwJobStat *job_stat;
 	Oid owner_uid;
+	bool reschedule_cagg_refresh = false;
+	elog(LOG, "in %s, memory context is %s", __func__, CurrentMemoryContext->name);
 
 	switch (new_state)
 	{
@@ -267,8 +421,28 @@ scheduled_bgw_job_transition_state_to(ScheduledBgwJob *sjob, JobState new_state)
 			Assert(sjob->handle == NULL);
 			Assert(!sjob->reserved_worker);
 
+			// Starting a transaction will switch to a new memory context
+			// we don't want that because the hashtable entries will not be visible
+
+			// insert into HTAB for concurrent ongoing cagg refreshes
+			if (job_is_cagg_refresh(sjob) && limit_concurrent_cagg_updates())
+				reschedule_cagg_refresh = cagg_refresh_htab_insert(sjob);
+
+			if (reschedule_cagg_refresh)
+			{
+				elog(LOG, "in check for reschedule_refresh, memory context is %s", CurrentMemoryContext->name);
+				// do not allow the job to start, put it into the scheduled state
+				// to keep it waiting until it is allowed to start
+				// take care to give it a high priority - HOW
+				scheduled_bgw_job_transition_state_to(sjob, JOB_STATE_SCHEDULED);
+				// CommitTransactionCommand();
+				// MemoryContextSwitchTo(scratch_mctx);
+				return;
+			}
+
 			StartTransactionCommand();
 
+			// lock the job for the duration of the transaction
 			if (!ts_bgw_job_get_share_lock(sjob->job.fd.id, CurrentMemoryContext))
 			{
 				elog(WARNING,
@@ -281,6 +455,7 @@ scheduled_bgw_job_transition_state_to(ScheduledBgwJob *sjob, JobState new_state)
 			}
 
 			/* If we are unable to reserve a worker go back to the scheduled state */
+			// worker_reserve just increments the counter of workers
 			sjob->reserved_worker = ts_bgw_worker_reserve();
 			if (!sjob->reserved_worker)
 			{
@@ -298,7 +473,9 @@ scheduled_bgw_job_transition_state_to(ScheduledBgwJob *sjob, JobState new_state)
 			 * start the job before you can encounter any errors so that they
 			 * are always registered
 			 */
+			// update jobs table (BGW_JOB_STAT)
 			mark_job_as_started(sjob);
+
 			if (ts_bgw_job_has_timeout(&sjob->job))
 				sjob->timeout_at =
 					ts_bgw_job_timeout_at(&sjob->job, ts_timer_get_current_timestamp());
@@ -353,6 +530,8 @@ on_failure_to_start_job(ScheduledBgwJob *sjob)
 		if (sjob->next_start != DT_NOBEGIN)
 			ts_bgw_job_stat_set_next_start(sjob->job.fd.id, sjob->next_start);
 		mark_job_as_ended(sjob, JOB_FAILURE_TO_START);
+		if (job_is_cagg_refresh(sjob) && limit_concurrent_cagg_updates())
+			cagg_refresh_htab_remove(sjob);
 	}
 	scheduled_bgw_job_transition_state_to(sjob, JOB_STATE_SCHEDULED);
 	CommitTransactionCommand();
@@ -738,6 +917,7 @@ ts_bgw_scheduler_process(int32 run_for_interval_ms,
 	TimestampTz quit_time = DT_NOEND;
 
 	pgstat_report_activity(STATE_RUNNING, NULL);
+	elog(LOG, "in %s, after reporting stats activity memory context is %s", __func__, CurrentMemoryContext->name);
 
 	/* txn to read the list of jobs from the DB */
 	StartTransactionCommand();
@@ -745,6 +925,7 @@ ts_bgw_scheduler_process(int32 run_for_interval_ms,
 	CommitTransactionCommand();
 	MemoryContextSwitchTo(scratch_mctx);
 
+	elog(LOG, "in %s, now i sould be in scratch_mct, memory context is %s", __func__, CurrentMemoryContext->name);
 	jobs_list_needs_update = false;
 
 	if (run_for_interval_ms > 0)
@@ -870,6 +1051,15 @@ ts_bgw_scheduler_register_signal_handlers(void)
 Datum
 ts_bgw_scheduler_main(PG_FUNCTION_ARGS)
 {
+	// in here you will set up the htab for caggs
+	// elog(LOG, "NOW CAlling %s", __func__);
+		// this is to see if the db_htab is allocated in shared_memory
+// 	bool continue_sleep = true;
+//    do {
+//        sleep(3);
+//        elog(LOG, "zzzzz %d", MyProcPid);
+//    } while (continue_sleep);
+
 	BackgroundWorkerBlockSignals();
 	/* Setup any signal handlers here */
 	ts_bgw_scheduler_register_signal_handlers();
@@ -879,9 +1069,25 @@ ts_bgw_scheduler_main(PG_FUNCTION_ARGS)
 
 	pgstat_report_appname(SCHEDULER_APPNAME);
 
+	// maybe this memset is not required
+	// memset(&cagg_refresh_counter, 0, sizeof(ConcurrentCaggRefreshCounterState));
+	// elog(LOG, "now i did the memset");
+	SpinLockInit(&cagg_refresh_counter.mutex);
+	cagg_refresh_counter.htab = NULL;
+	// elog(LOG, "now i inited the spinlock");
+	elog(LOG, "my pid in ts_bgw_scheduler_main is: %d", MyProcPid);
+	elog(LOG, "in %s, memory context is %s", __func__, CurrentMemoryContext->name);
+	// elog(LOG, "now i initialized the htab for cagg refreshess");
+
 	ts_bgw_scheduler_setup_mctx();
+	elog(LOG, "in %s, after settin up sched memxtc, memory context is %s", __func__, CurrentMemoryContext->name);
+	// do this in the current memory context, which is ??
+	MemoryContext prev_cxt = MemoryContextSwitchTo(scheduler_mctx);
+	cagg_refresh_counter.htab = init_scheduler_cagg_refresh_htab();
+	MemoryContextSwitchTo(prev_cxt);
 
 	ts_bgw_scheduler_process(-1, NULL);
+	// elog(LOG, "now i called the main loop of the scheduler");
 
 	Assert(scheduled_jobs == NIL);
 	MemoryContextSwitchTo(TopMemoryContext);
@@ -895,3 +1101,19 @@ ts_bgw_job_cache_invalidate_callback()
 {
 	jobs_list_needs_update = true;
 }
+
+
+
+// static Oid get_tablespace_by_hypertable_id(int32 ht_id)
+// {
+// 	// get_rel_tablespace takes a relid
+// 	Oid table_relid = ts_hypertable_id_to_relid(ht_id); // its in hypertable.c
+// 	return get_rel_tablespace(table_relid);
+// }
+
+
+
+// static void init_scheduler_guc()
+// {
+
+// }

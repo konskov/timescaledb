@@ -36,4 +36,7 @@ extern void ts_bgw_scheduler_setup_mctx(void);
 
 extern BackgroundWorkerHandle *ts_bgw_start_worker(const char *name, const BgwParams *bgw_params);
 
+/* GUC for */
+int ts_max_simultaneous_cagg_updates_per_hypertable; 
+
 #endif /* BGW_SCHEDULER_H */
