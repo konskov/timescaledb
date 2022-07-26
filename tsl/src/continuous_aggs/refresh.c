@@ -708,6 +708,7 @@ continuous_agg_refresh_internal(const ContinuousAgg *cagg,
 	bool is_raw_ht_distributed;
 	int rc;
 
+	elog(LOG, "func %s starting for cagg %u...", __func__, cagg->relid);
 	/* Connect to SPI manager due to the underlying SPI calls */
 	if ((rc = SPI_connect_ext(SPI_OPT_NONATOMIC) != SPI_OK_CONNECT))
 		elog(ERROR, "SPI_connect failed: %s", SPI_result_code_string(rc));
@@ -775,9 +776,10 @@ continuous_agg_refresh_internal(const ContinuousAgg *cagg,
 	 * serializes around a lock on the materialized hypertable for the
 	 * continuous aggregate that gets refreshed.
 	 */
+	elog(LOG, "func %s for cagg %u waiting on AccessExlcusiveLock on CONTINUOUS_AGGS_INVALIDATION_THRESHOLD", __func__, cagg->relid);
 	LockRelationOid(catalog_get_table_id(catalog, CONTINUOUS_AGGS_INVALIDATION_THRESHOLD),
 					AccessExclusiveLock);
-
+	elog(LOG, "func %s for cagg %u ACQUIRED AccessExlcusiveLock on CONTINUOUS_AGGS_INVALIDATION_THRESHOLD", __func__, cagg->relid);
 	/* Compute new invalidation threshold. Note that this computation caps the
 	 * threshold at the end of the last bucket that holds data in the
 	 * underlying hypertable. */
@@ -829,11 +831,14 @@ continuous_agg_refresh_internal(const ContinuousAgg *cagg,
 
 	/* Commit and Start a new transaction */
 	SPI_commit_and_chain();
+	elog(LOG, "cagg %u completed TXN1", cagg->relid);
 
 	cagg = ts_continuous_agg_find_by_mat_hypertable_id(mat_id);
 
 	if (!process_cagg_invalidations_and_refresh(cagg, &refresh_window, callctx, INVALID_CHUNK_ID))
 		emit_up_to_date_notice(cagg, callctx);
+	elog(LOG, "cagg %u completed TXN2", cagg->relid);
+	elog(LOG, "func %s done for cagg %u!", __func__, cagg->relid);
 
 	if ((rc = SPI_finish()) != SPI_OK_FINISH)
 		elog(ERROR, "SPI_finish failed: %s", SPI_result_code_string(rc));
