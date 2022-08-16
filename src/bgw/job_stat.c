@@ -161,8 +161,40 @@ typedef struct
 	BgwJob *job;
 } JobResultCtx;
 
+static TimestampTz 
+calculate_next_start_on_success_fixed(TimestampTz finish_time, Interval *duration, BgwJob *job)
+{
+	TimestampTz ts;
+	/* start_time */
+	ts = DirectFunctionCall2(timestamptz_mi_interval, finish_time, IntervalPGetDatum(duration));
+	/* plus schedule_interval */
+	ts = DatumGetTimestampTz(DirectFunctionCall2(timestamptz_pl_interval,
+												 TimestampTzGetDatum(ts),
+												 IntervalPGetDatum(&job->fd.schedule_interval)));
+
+	/* this is needed for jobs that execute for longer than their schedule interval */
+	while (finish_time >= ts)
+	{
+		ts = DatumGetTimestampTz(DirectFunctionCall2(timestamptz_pl_interval,
+												 TimestampTzGetDatum(ts),
+												 IntervalPGetDatum(&job->fd.schedule_interval)));
+	}
+
+	return ts;
+}
+
+static TimestampTz 
+calculate_next_start_on_success_drifting(TimestampTz last_finish, BgwJob *job)
+{
+	TimestampTz ts;
+	ts = DatumGetTimestampTz(DirectFunctionCall2(timestamptz_pl_interval,
+												 TimestampTzGetDatum(last_finish),
+												 IntervalPGetDatum(&job->fd.schedule_interval)));	
+	return ts;
+}
+
 static TimestampTz
-calculate_next_start_on_success(TimestampTz finish_time, BgwJob *job)
+calculate_next_start_on_success(TimestampTz finish_time, Interval *duration, BgwJob *job)
 {
 	TimestampTz ts;
 	TimestampTz last_finish = finish_time;
@@ -170,9 +202,13 @@ calculate_next_start_on_success(TimestampTz finish_time, BgwJob *job)
 	{
 		last_finish = ts_timer_get_current_timestamp();
 	}
-	ts = DatumGetTimestampTz(DirectFunctionCall2(timestamptz_pl_interval,
-												 TimestampTzGetDatum(last_finish),
-												 IntervalPGetDatum(&job->fd.schedule_interval)));
+
+	/* calculate next_start differently depending on drift/no drift */
+	if (job->fd.fixed_schedule)
+		ts = calculate_next_start_on_success_fixed(last_finish, duration, job);
+	else
+		ts = calculate_next_start_on_success_drifting(last_finish, job);
+
 	return ts;
 }
 
@@ -309,7 +345,7 @@ bgw_job_stat_tuple_mark_end(TupleInfo *ti, void *const data)
 		fd->last_successful_finish = fd->last_finish;
 		/* Mark the next start at the end if the job itself hasn't */
 		if (!bgw_job_stat_next_start_was_set(fd))
-			fd->next_start = calculate_next_start_on_success(fd->last_finish, result_ctx->job);
+			fd->next_start = calculate_next_start_on_success(fd->last_finish, duration, result_ctx->job);
 	}
 	else
 	{

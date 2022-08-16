@@ -45,7 +45,7 @@ extern TSDLLEXPORT int32 ts_bgw_job_insert_relation(Name application_name,
 													Interval *schedule_interval,
 													Interval *max_runtime, int32 max_retries,
 													Interval *retry_period, Name proc_schema,
-													Name proc_name, Name owner, bool scheduled,
+													Name proc_name, Name owner, bool scheduled, bool fixed_schedule,
 													int32 hypertable_id, Jsonb *config);
 extern TSDLLEXPORT void ts_bgw_job_permission_check(BgwJob *job);
 

@@ -19,6 +19,7 @@
 #include "bgw/job.h"
 #include "bgw_policy/job.h"
 #include "bgw_policy/continuous_aggregate_api.h"
+#include "bgw/job_stat.h"
 
 /*
  * Default scheduled interval for compress jobs = default chunk length.
@@ -192,6 +193,7 @@ policy_compression_add(PG_FUNCTION_ARGS)
 	const Dimension *dim;
 	Oid owner_id;
 	bool is_cagg = false;
+	bool fixed_schedule = PG_ARGISNULL(5) ? false : PG_GETARG_BOOL(5);
 
 	TS_PREVENT_FUNC_IF_READ_ONLY();
 
@@ -322,9 +324,15 @@ policy_compression_add(PG_FUNCTION_ARGS)
 										&proc_name,
 										&owner,
 										true,
+										fixed_schedule,
 										hypertable->fd.id,
 										config);
 
+	if (!PG_ARGISNULL(4))
+	{
+		TimestampTz initial_start = PG_GETARG_TIMESTAMPTZ(4);
+		ts_bgw_job_stat_upsert_next_start(job_id, initial_start);
+	}
 	ts_cache_release(hcache);
 
 	PG_RETURN_INT32(job_id);

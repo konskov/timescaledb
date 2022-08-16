@@ -24,6 +24,7 @@
 #include "time_utils.h"
 #include "policy_utils.h"
 #include "time_utils.h"
+#include "bgw/job_stat.h"
 
 #define POLICY_REFRESH_CAGG_PROC_NAME "policy_refresh_continuous_aggregate"
 #define CONFIG_KEY_MAT_HYPERTABLE_ID "mat_hypertable_id"
@@ -538,6 +539,7 @@ policy_refresh_cagg_add(PG_FUNCTION_ARGS)
 	List *jobs;
 	JsonbParseState *parse_state = NULL;
 	bool if_not_exists;
+	bool fixed_schedule;
 
 	/* Verify that the owner can create a background worker */
 	cagg_oid = PG_GETARG_OID(0);
@@ -559,6 +561,7 @@ policy_refresh_cagg_add(PG_FUNCTION_ARGS)
 
 	refresh_interval = *PG_GETARG_INTERVAL_P(3);
 	if_not_exists = PG_GETARG_BOOL(4);
+	fixed_schedule = PG_ARGISNULL(6) ? false : PG_GETARG_BOOL(6);
 
 	/* Make sure there is only 1 refresh policy on the cagg */
 	jobs = ts_bgw_job_find_by_proc_and_hypertable_id(POLICY_REFRESH_CAGG_PROC_NAME,
@@ -643,8 +646,14 @@ policy_refresh_cagg_add(PG_FUNCTION_ARGS)
 										&proc_name,
 										&owner,
 										true,
+										fixed_schedule,
 										cagg->data.mat_hypertable_id,
 										config);
+	if (!PG_ARGISNULL(5))
+	{
+		TimestampTz initial_start = PG_GETARG_TIMESTAMPTZ(5);
+		ts_bgw_job_stat_upsert_next_start(job_id, initial_start);
+	}
 
 	PG_RETURN_INT32(job_id);
 }

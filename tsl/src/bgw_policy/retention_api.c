@@ -25,6 +25,7 @@
 #include "utils.h"
 #include "jsonb_utils.h"
 #include "bgw_policy/job.h"
+#include "bgw/job_stat.h"
 
 #define POLICY_RETENTION_PROC_NAME "policy_retention"
 #define CONFIG_KEY_HYPERTABLE_ID "hypertable_id"
@@ -153,6 +154,7 @@ policy_retention_add(PG_FUNCTION_ARGS)
 		PG_ARGISNULL(3) ? (Interval) DEFAULT_SCHEDULE_INTERVAL : *PG_GETARG_INTERVAL_P(3);
 	Hypertable *hypertable;
 	Cache *hcache;
+	bool fixed_schedule = PG_ARGISNULL(5) ? false : PG_GETARG_BOOL(5);
 
 	Oid owner_id = ts_hypertable_permissions_check(ht_oid, GetUserId());
 	Oid partitioning_type;
@@ -279,9 +281,14 @@ policy_retention_add(PG_FUNCTION_ARGS)
 										&proc_name,
 										&owner,
 										true,
+										fixed_schedule,
 										hypertable->fd.id,
 										config);
-
+	if (!PG_ARGISNULL(4))
+	{
+		TimestampTz initial_start = PG_GETARG_TIMESTAMPTZ(4);
+		ts_bgw_job_stat_upsert_next_start(job_id, initial_start);
+	}
 	ts_cache_release(hcache);
 
 	PG_RETURN_INT32(job_id);
