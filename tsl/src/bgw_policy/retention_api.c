@@ -293,7 +293,8 @@ policy_retention_add_internal(Oid ht_oid, Oid window_type, Datum window_datum,
 										fixed_schedule,
 										hypertable->fd.id,
 										config,
-										initial_start);
+										initial_start,
+										NULL);
 
 	ts_cache_release(hcache);
 

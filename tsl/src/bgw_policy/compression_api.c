@@ -324,7 +324,8 @@ policy_compression_add_internal(Oid user_rel_oid, Datum compress_after_datum,
 										fixed_schedule,
 										hypertable->fd.id,
 										config,
-										initial_start);
+										initial_start,
+										NULL);
 
 	ts_cache_release(hcache);
 	PG_RETURN_INT32(job_id);

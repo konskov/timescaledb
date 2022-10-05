@@ -638,7 +638,8 @@ policy_refresh_cagg_add_internal(Oid cagg_oid, Oid start_offset_type, NullableDa
 										fixed_schedule,
 										cagg->data.mat_hypertable_id,
 										config,
-										initial_start);
+										initial_start,
+										NULL);
 
 	PG_RETURN_INT32(job_id);
 }

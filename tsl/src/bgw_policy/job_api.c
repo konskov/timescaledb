@@ -70,6 +70,7 @@ validate_check_signature(Oid check)
  * 4 scheduled BOOL DEFAULT true
  * 5 check_config REGPROC DEFAULT NULL
  * 6 fixed_schedule BOOL DEFAULT TRUE
+ * 7 timezone TEXT DEFAULT NULL
  * ) RETURNS INTEGER
  */
 Datum
@@ -95,6 +96,7 @@ job_add(PG_FUNCTION_ARGS)
 	bool scheduled = PG_ARGISNULL(4) ? true : PG_GETARG_BOOL(4);
 	Oid check = PG_ARGISNULL(5) ? InvalidOid : PG_GETARG_OID(5);
 	bool fixed_schedule = PG_ARGISNULL(6) ? true : PG_GETARG_BOOL(6);
+	text *timezone = PG_ARGISNULL(7) ? NULL : PG_GETARG_TEXT_PP(7);
 
 	TS_PREVENT_FUNC_IF_READ_ONLY();
 
@@ -182,7 +184,8 @@ job_add(PG_FUNCTION_ARGS)
 										fixed_schedule,
 										0,
 										config,
-										initial_start);
+										initial_start,
+										timezone);
 
 	if (!TIMESTAMP_NOT_FINITE(initial_start))
 		ts_bgw_job_stat_upsert_next_start(job_id, initial_start);
