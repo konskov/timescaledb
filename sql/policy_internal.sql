@@ -65,6 +65,11 @@ BEGIN
     lag := _timescaledb_internal.subtract_integer_from_now(htoid, lag::BIGINT);
   END IF;
 
+  -- chunk status bits:
+  -- 1: compressed
+  -- 2: compressed unordered
+  -- 4: frozen
+  -- 8: compressed partial
   FOR chunk_rec IN
     SELECT
       show.oid, ch.schema_name, ch.table_name, ch.status
@@ -75,7 +80,7 @@ BEGIN
       INNER JOIN _timescaledb_catalog.chunk ch ON ch.table_name = pgc.relname AND ch.schema_name = pgns.nspname AND ch.hypertable_id = htid
     WHERE
       ch.dropped IS FALSE
-      AND (ch.status = 0 OR ch.status = 3)
+      AND ch.status IN (0,3,9,11)
   LOOP
     IF chunk_rec.status = 0 THEN
       BEGIN
@@ -88,7 +93,7 @@ BEGIN
             USING DETAIL = format('Message: (%s), Detail: (%s).', _message, _detail),
                   ERRCODE = sqlstate;
       END;
-    ELSIF chunk_rec.status = 3 AND recompress_enabled IS TRUE THEN
+    ELSIF chunk_rec.status IN (3,9,11) AND recompress_enabled IS TRUE THEN
       BEGIN
         PERFORM @extschema@.decompress_chunk(chunk_rec.oid, if_compressed => true);
       EXCEPTION WHEN OTHERS THEN
