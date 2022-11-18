@@ -1243,6 +1243,15 @@ gapfill_state_initialize_columns(GapFillState *state)
 			continue;
 		}
 
+		// if (contain_var_clause((Node *) expr) && contain_agg_clause((Node *) expr))
+		// {
+		// 	state->columns[i] =
+		// 		gapfill_column_state_create(DERIVED_COLUMN, TupleDescAttr(tupledesc, i)->atttypid);
+		// 	state->multigroup = true;
+		// 	state->groups_initialized = false;
+		// 	continue;
+		// }
+
 		/* column with no special action from gap fill node */
 		state->columns[i] =
 			gapfill_column_state_create(NULL_COLUMN, TupleDescAttr(tupledesc, i)->atttypid);
