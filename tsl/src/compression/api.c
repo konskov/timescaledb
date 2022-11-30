@@ -23,6 +23,7 @@
 #include <utils/elog.h>
 #include <utils/fmgrprotos.h>
 #include <libpq-fe.h>
+#include <utils/tuplestore.h>
 
 #include <remote/dist_commands.h>
 #include "compat/compat.h"
@@ -44,6 +45,7 @@
 #include "scanner.h"
 #include "scan_iterator.h"
 #include "utils.h"
+#include "chunk.h"
 
 typedef struct CompressChunkCxt
 {
@@ -892,3 +894,192 @@ tsl_recompress_chunk_wrapper(Chunk *uncompressed_chunk)
 	tsl_compress_chunk_wrapper(chunk, false);
 	return true;
 }
+
+/*
+ * This function will replace the procedure for recompress_chunk
+ * It will keep the compressed chunk around, only decompressing the
+ * batches that are affected by the addition of newer data.
+ * If more batches need to be created, it will create those and update
+ * the meta_sequence_number of the following ones.
+ *
+ * 0 uncompressed_chunk_id REGCLASS
+ * 1 if_not_compressed BOOL = false
+ */
+Datum
+tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
+{
+	Oid uncompressed_chunk_id = PG_ARGISNULL(0) ? InvalidOid : PG_GETARG_OID(0);
+	bool if_not_compressed = PG_ARGISNULL(1) ? false : PG_GETARG_BOOL(1);
+	TS_PREVENT_FUNC_IF_READ_ONLY();
+	Chunk *uncompressed_chunk = ts_chunk_get_by_relid(uncompressed_chunk_id, true);
+
+	if (NULL == uncompressed_chunk)
+		elog(ERROR, "unknown chunk id %d", uncompressed_chunk_id);
+
+	int32 status = uncompressed_chunk->fd.status;
+
+	if (status == CHUNK_STATUS_DEFAULT)
+		elog(ERROR, "call compress_chunk instead of recompress_chunk");
+	if (status == CHUNK_STATUS_COMPRESSED)
+	{
+		int elevel = if_not_compressed ? NOTICE : ERROR;
+		elog(elevel,
+			 "nothing to recompress in chunk %s.%s",
+			 uncompressed_chunk->fd.schema_name.data,
+			 uncompressed_chunk->fd.table_name.data);
+	}
+
+	/*
+	 * only proceed if status in (3, 9, 11)
+	 * 1: compressed
+	 * 2: compressed_unordered
+	 * 4: frozen
+	 * 8: compressed_partial
+	 */
+	if (status != 3 && status != 9 && status != 11)
+		elog(ERROR,
+			 "unexpected chunk status %d in chunk %s.%s",
+			 uncompressed_chunk->fd.schema_name.data,
+			 uncompressed_chunk->fd.table_name.data);
+
+	// might have to consider adding here: ts_chunk_validate_chunk_status_for_operation();
+
+	Chunk *compressed_chunk = ts_chunk_get_by_id(uncompressed_chunk->fd.compressed_chunk_id, true);
+
+	/* lock both chunks, compresssed and uncompressed */
+	/* we need to read the uncompressed chunk, and finally truncate it, but we also want to
+	 block everyone else from updating it, perhaps shouldn't read it either until we have
+	 committed since we'll truncate it */
+	LockRelationOid(compressed_chunk->table_id, AccessExclusiveLock);
+	LockRelationOid(uncompressed_chunk->table_id, AccessExclusiveLock);
+
+	/* for segment in compressed chunk, fetch it, decompress into tuplestore, but first
+	 * find and keep track of the distinct segments in a tuplestore
+	 * we don't really care for all the fields in the tuple, just for the segby cols. 
+	 * but whatever, we just store a representative tuple for each segment. 
+	 */
+	ScanKeyData *scankey_compressed = NULL, *scankey_uncompressed = NULL;
+
+	// HTAB *chunk_segments;
+	List *chunk_segments;
+	chunk_segments = ts_get_chunk_segments(Oid compressed_chunk_oid);
+	// find the segmentby columns in the compressed chunk
+
+	fetch_segment(segmentby_cols); // using indexScan
+	decompress_segment(tuplestore);
+	uncompressed_segment = fetch_uncompressed_segment(
+		segmentby_cols); // select * where segmentby cols match, using heapscan and filter scanKey
+	add_to_tuplestore(uncompressed_segment);
+	/* retrieve the uncompressed data from the compressed chunk */
+	// actually Sven says this should be: for each segment in compressed chunk, check if it needs
+	// recompression how do I check that though?
+	TupleDesc tupdesc;
+
+	/* find the matching batches in the compressed chunk */
+	// I probably can use a hashtable for this? think Jan already did this somewhere for copy
+
+	/* merge the two of them */
+
+	/* what do we do with extra large batches that need splitting? */
+
+	/* put them back into compressed chunk */
+}
+
+/*
+ * This function populates the list with the segments found in the compressed chunk
+ */
+static List *
+ts_get_chunk_segments(Oid compressed_chunk_oid, int nsegmentby_cols)
+{
+	List *segments = NIL;
+	List *htcols_list = NIL;
+	/* copied from compress_row_init */
+	htcols_list = ts_hypertable_compression_get(srcht_id);
+
+	// do indexScan using hypertable_id on hypertable_compression to find the segmentby cols
+	// in a compressed chunk and their correct ordering
+	// 
+	// do a simple table scan
+	TableScanDesc heapScan;
+	heapScan = table_beginscan(compressed_chunk_oid, GetLatestSnapshot(), 0, (ScanKey) NULL);
+	Datum *segment =
+		palloc(nsegmentby_cols *
+			   sizeof(*segment)); // Datum array that'll hold the value of current segby cols
+	bool for (tuple = heap_getnext(heapScan, ForwardScanDirection); tuple != NULL;
+			  tuple = heap_getnext(heapScan, ForwardScanDirection))
+	{
+		if (HeapTupleIsValid(tuple))
+		{
+			slot_getallattrs()
+		}
+	}
+	list_append_unique(segments, segment);
+}
+
+// listcell for individual segment
+typedef struct compressed_segment_info {
+	int nsegmentby_cols;
+	Datum *segbycols_datum_values; // will be an array of datum values
+} 
+
+/*
+ * copied verbatim from decompress_chunk
+ * @param state An initialized tuplestorestate.
+ * @param in_table The oid of the compressed chunk
+ */
+static void
+decompress_segment(Tuplesortstate *state, Oid in_table, Oid out_table,
+				   int num_segmentby /* number of segmentby columns */)
+{
+	TupleDesc in_desc = RelationGetDescr(in_rel);
+	TupleDesc out_desc = RelationGetDescr(out_rel);
+
+	Oid compressed_data_type_oid = ts_custom_type_cache_get(CUSTOM_TYPE_COMPRESSED_DATA)->type_oid;
+
+	Assert(OidIsValid(compressed_data_type_oid));
+	RowDecompressor decompressor = {
+		.per_compressed_cols =
+			create_per_compressed_column(in_desc, out_desc, out_table, compressed_data_type_oid),
+		.num_compressed_columns = in_desc->natts,
+
+		.out_desc = out_desc, /* uncompressed desc */
+		.out_rel = out_rel,
+
+		.mycid = GetCurrentCommandId(true),
+		.bistate = GetBulkInsertState(),
+
+		/* cache memory used to store the decompressed datums/is_null for form_tuple */
+		.decompressed_datums = palloc(sizeof(Datum) * out_desc->natts),
+		.decompressed_is_nulls = palloc(sizeof(bool) * out_desc->natts),
+	};
+
+	ScanKeyData *scankey_compressed = NULL;
+	scankey = palloc0(sizeof(ScanKeyData) * num_segmentby);
+
+	TableScanDesc heapScan = table_beginscan(in_rel, GetLatestSnapshot(), 0, (ScanKey) NULL);
+
+	// actually teh init should be done outside of this func
+	tuplesortstate = tuplesort_begin_heap(tupDesc,
+										  n_keys,
+										  sort_keys,
+										  sort_operators,
+										  sort_collations,
+										  nulls_first,
+										  maintenance_work_mem,
+										  NULL,
+										  false /*=randomAccess*/);
+}
+
+// from catalog.chunk_index I can get the index as we do in chunk_index.c
+// create a scanKey with the segmentby columns
+// look at compression.c:737 for scan key init for dynamic number of segmentby columns
+// get_sequence_number_for_current_group
+
+/*
+ *
+ * I think I can use exactly row_decompressor_decompress_row except for the heap_insert.
+ * Instead of that, I can use tuplesort_puttuple, that's all.
+ *
+ */
+
+// take a look at table_scan_sequence_number

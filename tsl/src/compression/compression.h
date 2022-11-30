@@ -161,5 +161,7 @@ extern CompressSingleRowState *compress_row_init(int srcht_id, Relation in_rel, 
 extern TupleTableSlot *compress_row_exec(CompressSingleRowState *cr, TupleTableSlot *slot);
 extern void compress_row_end(CompressSingleRowState *cr);
 extern void compress_row_destroy(CompressSingleRowState *cr);
+extern void row_decompressor_decompress_row(RowDecompressor *row_decompressor,
+											Tuplesortstate *tuplesortstate);
 
 #endif

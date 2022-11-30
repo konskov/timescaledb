@@ -1329,7 +1329,6 @@ static PerCompressedColumn *create_per_compressed_column(TupleDesc in_desc, Tupl
 static void populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_cols,
 													  int16 num_cols, Datum *compressed_datums,
 													  bool *compressed_is_nulls);
-static void row_decompressor_decompress_row(RowDecompressor *row_decompressor);
 static bool per_compressed_col_get_data(PerCompressedColumn *per_compressed_col,
 										Datum *decompressed_datums, bool *decompressed_is_nulls);
 
@@ -1411,7 +1410,7 @@ decompress_chunk(Oid in_table, Oid out_table)
 													  compressed_datums,
 													  compressed_is_nulls);
 
-			row_decompressor_decompress_row(&decompressor);
+			row_decompressor_decompress_row(&decompressor, NULL);
 			MemoryContextSwitchTo(old_ctx);
 			MemoryContextReset(per_compressed_row_ctx);
 		}
@@ -1534,7 +1533,7 @@ populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_co
 }
 
 static void
-row_decompressor_decompress_row(RowDecompressor *row_decompressor)
+row_decompressor_decompress_row(RowDecompressor *row_decompressor, Tuplesortstate *tuplesortstate)
 {
 	/* each compressed row decompresses to at least one row,
 	 * even if all the data is NULL
@@ -1562,11 +1561,20 @@ row_decompressor_decompress_row(RowDecompressor *row_decompressor)
 			HeapTuple decompressed_tuple = heap_form_tuple(row_decompressor->out_desc,
 														   row_decompressor->decompressed_datums,
 														   row_decompressor->decompressed_is_nulls);
-			heap_insert(row_decompressor->out_rel,
-						decompressed_tuple,
-						row_decompressor->mycid,
-						0 /*=options*/,
-						row_decompressor->bistate);
+			// then we're doing just decompress and we must put the decompressed into the
+			// uncompressed chunk
+			if (tuplesortstate == NULL)
+			{
+				heap_insert(row_decompressor->out_rel,
+							decompressed_tuple,
+							row_decompressor->mycid,
+							0 /*=options*/,
+							row_decompressor->bistate);
+			}
+			else
+			{
+				tuplestore_puttuple(tuplesortstate, decompressed_tuple);
+			}
 
 			heap_freetuple(decompressed_tuple);
 			wrote_data = true;
