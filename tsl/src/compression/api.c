@@ -943,9 +943,40 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 			 uncompressed_chunk->fd.table_name.data);
 
 	// might have to consider adding here: ts_chunk_validate_chunk_status_for_operation();
+	CompressChunkCxt cxt;
+	int i = 0, htcols_listlen;
+	const ColumnCompressionInfo **colinfo_array;
+	ListCell *lc;
+	List *in_rel_index_oids = NIL;
 
+	int32 srcht_id = uncompressed_chunk->fd.hypertable_id; // need it to find the segby cols from the catalog
 	Chunk *compressed_chunk = ts_chunk_get_by_id(uncompressed_chunk->fd.compressed_chunk_id, true);
-
+	Cache *hcache = ts_hypertable_cache_pin();
+	// remember to do ts_cache_release(hcache);
+	Hypertable *srcht = ts_hypertable_cache_get_entry(hcache, uncompressed_chunk->fd.hypertable_id, CACHE_FLAG_NONE);
+	List *htcols_list = ts_hypertable_compression_get(srcht_id);
+	htcols_listlen = list_length(htcols_list);
+	// find segmentby columns (need to know their index)
+	/* convert list to array of pointers for compress_chunk */
+	colinfo_array = palloc(sizeof(ColumnCompressionInfo *) * htcols_listlen);
+	int16 *segbycolinfo_array;
+	List *segmentby_cols; // list of segby cols offsets
+	int nsegmentby_cols;
+	foreach (lc, htcols_list)
+	{
+		FormData_hypertable_compression *fd = (FormData_hypertable_compression *) lfirst(lc);
+		colinfo_array[i++] = fd;
+		if (COMPRESSIONCOL_IS_SEGMENT_BY(fd))
+			lappend(segmentby_cols, fd->segmentby_column_index);
+	}	
+	nsegmentby_cols = list_length(segmentby_cols);
+	// convert list of segby cols to array
+	segbycolinfo_array = palloc(sizeof(*segbycolinfo_array) * nsegmentby_cols);
+	i = 0;
+	foreach(lc, segmentby_cols)
+	{
+		segbycolinfo_array[i++] = lfirst(lc);
+	}
 	/* lock both chunks, compresssed and uncompressed */
 	/* we need to read the uncompressed chunk, and finally truncate it, but we also want to
 	 block everyone else from updating it, perhaps shouldn't read it either until we have
@@ -958,8 +989,73 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 	 * we don't really care for all the fields in the tuple, just for the segby cols. 
 	 * but whatever, we just store a representative tuple for each segment. 
 	 */
-	ScanKeyData *scankey_compressed = NULL, *scankey_uncompressed = NULL;
+	
+	int16 *in_column_offsets = compress_chunk_populate_keys(uncompressed_chunk->fd.id,
+															column_compression_info,
+															num_compression_infos,
+															&n_keys,
+															&keys);
+	
 
+	in_rel_index_oids = RelationGetIndexList(in_rel);
+	// if NIL, no index and need fallback to seqscan
+	// find an index that contains all the segmentby cols in order
+	Oid index_oid = linitial(lc); // there is just one index so this will work fine
+	Relation index_rel = index_open(index_oid, AccessShareLock);
+	// foreach(lc, in_rel_index_oids)
+	// {
+	// 	Oid index_oid = lfirst_oid(lc);
+	// 	Relation index_rel = index_open(index_oid, AccessShareLock);
+	// 	IndexInfo *index_info = BuildIndexInfo(index_rel);
+	// 	if (index_info->ii_IndexAttrNumbers >= nsegmentby_cols && index_info->ii_Am ==BTREE_AM_OID)
+	// 	{
+	// 		for (i = 0; i < nsegmentby_cols; i++)
+	// 		{
+	// 			// this column must be in the index and also in the correct order
+	// 			int16 att_num = get_attnum()
+	// 		}
+	// 	}
+	// }
+
+	IndexScanDesc index_scan;
+	Datum val;
+	Datum *current_segment = palloc(sizeof(Datum) * nsegmentby_cols); // only keep the current segmenby col values
+	Relation compressed_chunk_rel = table_open(compressed_chunk->table_id, AccessExclusiveLock); // need this lock since we're gonna be the only ones modifiying
+	bool first_iteration = true;
+	ScanKeyData *scankey_compressed = NULL, *scankey_uncompressed = NULL;
+	index_scan = index_beginscan(compressed_chunk_rel, index_rel, GetTransactionSnapshot(), 0, 0);
+	TupleTableSlot *slot = table_slot_create(compressed_chunk->table_id, NULL); // need slot so I can put it in the tuplesort (function )
+	index_rescan(index_scan, NULL, 0, NULL, 0);
+	while (index_getnext_slot(index_scan, ForwardScanDirection, slot))
+	{
+		i = 0;
+		int col = 0;
+		slot_getallattrs(slot);
+		
+		if (first_iteration)
+		{
+			Datum val;
+			bool is_null;
+			first_iteration = false;
+			// get current segment
+			// for attr in slot - check if it's a segby col, then keep in current segment
+			for (col = 0; col < htcols_listlen; col++)
+			{
+				val = slot_getattr(slot, AttrOffsetGetAttrNumber(col), &is_null);
+				if (COMPRESSIONCOL_IS_SEGMENT_BY(col))
+				{
+					bool typbyval;
+					int16 typlen;
+					Oid type = TupleDescAttr(slot->tts_tupleDescriptor, i)->atttypid;
+					get_typlenbyval(type, &typlen, &typbyval);
+					current_segment[i++] = datumCopy(val, typbyval, typlen);
+				}
+			}
+		}
+		// if not first iteration then we do have a segment already, so compare those
+
+
+	}
 	// HTAB *chunk_segments;
 	List *chunk_segments;
 	chunk_segments = ts_get_chunk_segments(Oid compressed_chunk_oid);
