@@ -895,6 +895,40 @@ tsl_recompress_chunk_wrapper(Chunk *uncompressed_chunk)
 	return true;
 }
 
+/* this function does */
+static CompressedSegmentInfo *
+compressed_segment_info_new()
+{
+
+}
+
+static bool
+decompress_chunk_changed_group(SegmentInfo **current_segment, TupleTableSlot *slot)
+{
+	Datum val;
+	int col;
+	bool isnull;
+	FormData_hypertable_compression *fd;
+	if (COMPRESSIONCOL_IS_SEGMENT_BY(col))
+	{
+		// bool typbyval;
+		// int16 typlen;
+		// Oid type = TupleDescAttr(slot->tts_tupleDescriptor, i)->atttypid;
+		// if ()
+		// get_typlenbyval(type, &typlen, &typbyval);
+		// current_segment[i++] = datumCopy(val, typbyval, typlen);
+		/* we have switched segment, stop here and process current tupstore */
+		if (!segment_info_datum_is_in_group(current_segment[i++], val, is_null))
+		{
+			changed_segment = true;
+			// new segment, need to call per-segment processing
+			pfree(current_segment[i - 1]); // bacause increased previously
+			segment_info = segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, i - 1));
+			current_segment[i - 1] = segment_info;
+		}
+	}
+}
+
 /*
  * This function will replace the procedure for recompress_chunk
  * It will keep the compressed chunk around, only decompressing the
@@ -1016,10 +1050,22 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 	// 		}
 	// 	}
 	// }
+	Relation uncompressed_chunk_rel = table_open(uncompressed_chunk->table_id, ExclusiveLock);
+	Tuplesortstate *segment_tuplesortstate;
+	TupleDesc in_rel_tupdesc = RelationGetDescr(in_rel); // the decompresssed row's tuple descriptor
+	// TupleTableSlot *heap_tuple_slot = MakeTupleTableSlot(tupDesc, &TTSOpsHeapTuple);
+	AttrNumber *sort_keys = palloc(sizeof(*sort_keys) * n_keys);
+	Oid *sort_operators = palloc(sizeof(*sort_operators) * n_keys);
+	Oid *sort_collations = palloc(sizeof(*sort_collations) * n_keys);
+	bool *nulls_first = palloc(sizeof(*nulls_first) * n_keys);
+	tuplesortstate = tuplesort_begin_heap(in_rel_tupdesc, nkeys, sort_keys, sort_operators, 
+		nulls_first, maintenance_work_mem, NULL, false);
+
 
 	IndexScanDesc index_scan;
-	Datum val;
-	Datum *current_segment = palloc(sizeof(Datum) * nsegmentby_cols); // only keep the current segmenby col values
+	SegmentInfo *segment_info = NULL;
+	bool changed_segment = false;
+	SegmentInfo **current_segment = palloc(sizeof(SegmentInfo*) * nsegmentby_cols); // only keep the current segmenby col values
 	Relation compressed_chunk_rel = table_open(compressed_chunk->table_id, AccessExclusiveLock); // need this lock since we're gonna be the only ones modifiying
 	bool first_iteration = true;
 	ScanKeyData *scankey_compressed = NULL, *scankey_uncompressed = NULL;
@@ -1034,9 +1080,10 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 		
 		if (first_iteration)
 		{
+			first_iteration = false;
+			// decompress_segment_update_group(&current_segment, nsegmentby_cols, slot);
 			Datum val;
 			bool is_null;
-			first_iteration = false;
 			// get current segment
 			// for attr in slot - check if it's a segby col, then keep in current segment
 			for (col = 0; col < htcols_listlen; col++)
@@ -1044,15 +1091,100 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 				val = slot_getattr(slot, AttrOffsetGetAttrNumber(col), &is_null);
 				if (COMPRESSIONCOL_IS_SEGMENT_BY(col))
 				{
-					bool typbyval;
-					int16 typlen;
-					Oid type = TupleDescAttr(slot->tts_tupleDescriptor, i)->atttypid;
-					get_typlenbyval(type, &typlen, &typbyval);
-					current_segment[i++] = datumCopy(val, typbyval, typlen);
+					// bool typbyval;
+					// int16 typlen;
+					// Oid type = TupleDescAttr(slot->tts_tupleDescriptor, i)->atttypid;
+					// get_typlenbyval(type, &typlen, &typbyval);
+					segment_info = segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, i));
+					// current_segment[i++] = datumCopy(val, typbyval, typlen);
+					current_segment[i++] = segment_info;
 				}
 			}
 		}
+		if (!decompress_chunk_changed_group(current_segment, slot))
+		{
+			i = 0;
+			for (col = 0; col < htcols_listlen; col++)
+			{
+
+			}
+		}
+		i = 0;
 		// if not first iteration then we do have a segment already, so compare those
+		for (col = 0; col < htcols_listlen; col++)
+		{
+			val = slot_getattr(slot, AttrOffsetGetAttrNumber(col), &is_null);
+			// if ()
+			{
+				// decompress column and put it into tuplestore
+				HeapTuple = 
+				heap_deform_tuple(compressed_tuple, in_desc, compressed_datums, compressed_is_nulls);
+				populate_per_compressed_columns_from_data(decompressor.per_compressed_cols,
+														in_desc->natts,
+														compressed_datums,
+														compressed_is_nulls);
+
+				row_decompressor_decompress_row(&decompressor, NULL);
+				simple_table_tuple_delete(compressed_chunk_relid, *(slot->tts_tid), GetLatestSnapshot())
+			}
+			if (COMPRESSIONCOL_IS_SEGMENT_BY(col))
+			{
+				// bool typbyval;
+				// int16 typlen;
+				// Oid type = TupleDescAttr(slot->tts_tupleDescriptor, i)->atttypid;
+				// if ()
+				// get_typlenbyval(type, &typlen, &typbyval);
+				// current_segment[i++] = datumCopy(val, typbyval, typlen);
+				/* we have switched segment, stop here and process current tupstore */
+				if (!segment_info_datum_is_in_group(current_segment[i++], val, is_null))
+				{
+					changed_segment = true;
+					// new segment, need to call per-segment processing
+					pfree(current_segment[i - 1]); // bacause increased previously
+					segment_info = segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, i - 1));
+					current_segment[i - 1] = segment_info;
+				}
+			}
+		}
+		// delete the tuple now that we have parsed it
+
+		if (!changed_segment)
+		{
+			// first decompress it, then add it
+			row_decompressor_decompress_row(&decompressor, NULL);
+			// tuplesort_puttupleslot(segment_tuplesortstate, slot);
+		}
+		if (changed_segment)
+		{
+			// time to do the sorting with what we have, also fetch the uncompressed stuff
+			// and rewrite the segment
+			// start a heapscan on the uncompressed chunk, you know the scankey from the current segment
+			TableScanDesc heapScan;
+			HeapTuple uncompressed_tuple;
+			ScanKeyData *scankey = palloc0(sizeof(*scankey) * nsegmentby_cols);
+			for (int seg_col = 0; seg_col < nsegmentby_cols; seg_col++)
+			{
+				// what is the attno of this segby col in the uncompressed chunk?
+				int16 attno = AttrOffsetGetAttrNumber()
+				ScanKeyEntryInitializeWithInfo(&scankey[seg_col], 0 /*flags*/, attno, 
+				BTEqualStrategyNumber, InvalidOid, collation, eq_fn, val);
+			}
+			heapScan = table_beginscan(uncompressed_chunk_rel, GetLatestSnapshot(), 
+					nsegmentby_cols, scankey);
+			for (uncompressed_tuple = heap_getnext(heapScan, ForwardScanDirection);
+				uncompressed_tuple != NULL;
+				uncompressed_tuple = heap_getnext(heapScan, ForwardScanDirection))
+			{
+				tuplesort_putheaptuple(segment_tuplesortstate, uncompressed_tuple);
+				// simple_heap_delete since we don't expect concurrent updates, 
+				// we have exclusive lock on the relation
+				simple_heap_delete(uncompressed_chunk_rel, uncompressed_tuple->t_self);
+			}
+			tuplesort_performsort(segment_tuplesortstate);
+
+		}
+
+
 
 
 	}

@@ -52,12 +52,6 @@
 
 #include <nodes/print.h>
 
-#define MAX_ROWS_PER_COMPRESSION 1000
-/* gap in sequence id between rows, potential for adding rows in gap later */
-#define SEQUENCE_NUM_GAP 10
-#define COMPRESSIONCOL_IS_SEGMENT_BY(col) ((col)->segmentby_column_index > 0)
-#define COMPRESSIONCOL_IS_ORDER_BY(col) ((col)->orderby_column_index > 0)
-
 static const CompressionAlgorithmDefinition definitions[_END_COMPRESSION_ALGORITHMS] = {
 	[COMPRESSION_ALGORITHM_ARRAY] = ARRAY_ALGORITHM_DEFINITION,
 	[COMPRESSION_ALGORITHM_DICTIONARY] = DICTIONARY_ALGORITHM_DEFINITION,
@@ -85,17 +79,6 @@ DecompressionIterator *(*tsl_get_decompression_iterator_init(CompressionAlgorith
 	else
 		return definitions[algorithm].iterator_init_forward;
 }
-
-typedef struct SegmentInfo
-{
-	Datum val;
-	FmgrInfo eq_fn;
-	FunctionCallInfo eq_fcinfo;
-	int16 typlen;
-	bool is_null;
-	bool typ_by_val;
-	Oid collation;
-} SegmentInfo;
 
 typedef struct PerColumn
 {
@@ -551,9 +534,7 @@ static void row_compressor_append_row(RowCompressor *row_compressor, TupleTableS
 static void row_compressor_flush(RowCompressor *row_compressor, CommandId mycid,
 								 bool changed_groups);
 
-static SegmentInfo *segment_info_new(Form_pg_attribute column_attr);
 static void segment_info_update(SegmentInfo *segment_info, Datum val, bool is_null);
-static bool segment_info_datum_is_in_group(SegmentInfo *segment_info, Datum datum, bool is_null);
 
 /* Find segment by index for setting the correct sequence number if
  * we are trying to roll up chunks while compressing
@@ -1213,7 +1194,7 @@ row_compressor_finish(RowCompressor *row_compressor)
  ** segment_info **
  ******************/
 
-static SegmentInfo *
+SegmentInfo *
 segment_info_new(Form_pg_attribute column_attr)
 {
 	Oid eq_fn_oid =
