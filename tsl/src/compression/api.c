@@ -903,28 +903,33 @@ compressed_segment_info_new()
 }
 
 static bool
-decompress_chunk_changed_group(SegmentInfo **current_segment, TupleTableSlot *slot)
+decompress_segment_changed_group(SegmentInfo **current_segment, TupleTableSlot *slot, int ncols_compressed)
 {
 	Datum val;
 	int col;
 	bool isnull;
-	FormData_hypertable_compression *fd;
-	if (COMPRESSIONCOL_IS_SEGMENT_BY(col))
+	FormData_hypertable_compression *fd; // or ColumnCompressionInfo, they are the same
+	for (int i = 0; i < ncols_compressed; i++)
 	{
-		// bool typbyval;
-		// int16 typlen;
-		// Oid type = TupleDescAttr(slot->tts_tupleDescriptor, i)->atttypid;
-		// if ()
-		// get_typlenbyval(type, &typlen, &typbyval);
-		// current_segment[i++] = datumCopy(val, typbyval, typlen);
-		/* we have switched segment, stop here and process current tupstore */
-		if (!segment_info_datum_is_in_group(current_segment[i++], val, is_null))
+		if (!COMPRESSIONCOL_IS_SEGMENT_BY(col))
+			continue;
+		else
 		{
-			changed_segment = true;
-			// new segment, need to call per-segment processing
-			pfree(current_segment[i - 1]); // bacause increased previously
-			segment_info = segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, i - 1));
-			current_segment[i - 1] = segment_info;
+			// bool typbyval;
+			// int16 typlen;
+			// Oid type = TupleDescAttr(slot->tts_tupleDescriptor, i)->atttypid;
+			// if ()
+			// get_typlenbyval(type, &typlen, &typbyval);
+			// current_segment[i++] = datumCopy(val, typbyval, typlen);
+			/* we have switched segment, stop here and process current tupstore */
+			if (!segment_info_datum_is_in_group(current_segment[i++], val, is_null))
+			{
+				changed_segment = true;
+				// new segment, need to call per-segment processing
+				pfree(current_segment[i - 1]); // bacause increased previously
+				segment_info = segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, i - 1));
+				current_segment[i - 1] = segment_info;
+			}
 		}
 	}
 }
@@ -1052,6 +1057,7 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 	// }
 	Relation uncompressed_chunk_rel = table_open(uncompressed_chunk->table_id, ExclusiveLock);
 	Tuplesortstate *segment_tuplesortstate;
+	
 	TupleDesc in_rel_tupdesc = RelationGetDescr(in_rel); // the decompresssed row's tuple descriptor
 	// TupleTableSlot *heap_tuple_slot = MakeTupleTableSlot(tupDesc, &TTSOpsHeapTuple);
 	AttrNumber *sort_keys = palloc(sizeof(*sort_keys) * n_keys);
@@ -1101,12 +1107,12 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 				}
 			}
 		}
-		if (!decompress_chunk_changed_group(current_segment, slot))
+		if (!decompress_segment_changed_group(current_segment, slot))
 		{
 			i = 0;
 			for (col = 0; col < htcols_listlen; col++)
 			{
-
+				
 			}
 		}
 		i = 0;
