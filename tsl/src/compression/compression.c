@@ -52,12 +52,6 @@
 #include "guc.h"
 #include <nodes/print.h>
 
-#define MAX_ROWS_PER_COMPRESSION 1000
-/* gap in sequence id between rows, potential for adding rows in gap later */
-#define SEQUENCE_NUM_GAP 10
-#define COMPRESSIONCOL_IS_SEGMENT_BY(col) ((col)->segmentby_column_index > 0)
-#define COMPRESSIONCOL_IS_ORDER_BY(col) ((col)->orderby_column_index > 0)
-
 static const CompressionAlgorithmDefinition definitions[_END_COMPRESSION_ALGORITHMS] = {
 	[COMPRESSION_ALGORITHM_ARRAY] = ARRAY_ALGORITHM_DEFINITION,
 	[COMPRESSION_ALGORITHM_DICTIONARY] = DICTIONARY_ALGORITHM_DEFINITION,
@@ -85,17 +79,6 @@ DecompressionIterator *(*tsl_get_decompression_iterator_init(CompressionAlgorith
 	else
 		return definitions[algorithm].iterator_init_forward;
 }
-
-typedef struct SegmentInfo
-{
-	Datum val;
-	FmgrInfo eq_fn;
-	FunctionCallInfo eq_fcinfo;
-	int16 typlen;
-	bool is_null;
-	bool typ_by_val;
-	Oid collation;
-} SegmentInfo;
 
 typedef struct PerColumn
 {
@@ -172,9 +155,7 @@ static void row_compressor_append_row(RowCompressor *row_compressor, TupleTableS
 static void row_compressor_flush(RowCompressor *row_compressor, CommandId mycid,
 								 bool changed_groups);
 
-static SegmentInfo *segment_info_new(Form_pg_attribute column_attr);
 static void segment_info_update(SegmentInfo *segment_info, Datum val, bool is_null);
-static bool segment_info_datum_is_in_group(SegmentInfo *segment_info, Datum datum, bool is_null);
 static void run_analyze_on_chunk(Oid chunk_relid);
 
 /********************
@@ -1402,7 +1383,7 @@ row_compressor_finish(RowCompressor *row_compressor)
  ** segment_info **
  ******************/
 
-static SegmentInfo *
+SegmentInfo *
 segment_info_new(Form_pg_attribute column_attr)
 {
 	Oid eq_fn_oid =
@@ -1441,7 +1422,7 @@ segment_info_update(SegmentInfo *segment_info, Datum val, bool is_null)
 		segment_info->val = datumCopy(val, segment_info->typ_by_val, segment_info->typlen);
 }
 
-static bool
+bool
 segment_info_datum_is_in_group(SegmentInfo *segment_info, Datum datum, bool is_null)
 {
 	Datum data_is_eq;
@@ -1472,53 +1453,12 @@ segment_info_datum_is_in_group(SegmentInfo *segment_info, Datum datum, bool is_n
  ** decompress_chunk **
  **********************/
 
-typedef struct PerCompressedColumn
-{
-	Oid decompressed_type;
-
-	/* the compressor to use for compressed columns, always NULL for segmenters
-	 * only use if is_compressed
-	 */
-	DecompressionIterator *iterator;
-
-	/* segment info; only used if !is_compressed */
-	Datum val;
-
-	/* is this a compressed column or a segment-by column */
-	bool is_compressed;
-
-	/* the value stored in the compressed table was NULL */
-	bool is_null;
-
-	/* the index in the decompressed table of the data -1,
-	 * if the data is metadata not found in the decompressed table
-	 */
-	int16 decompressed_column_offset;
-} PerCompressedColumn;
-
-typedef struct RowDecompressor
-{
-	PerCompressedColumn *per_compressed_cols;
-	int16 num_compressed_columns;
-
-	TupleDesc out_desc;
-	Relation out_rel;
-
-	CommandId mycid;
-	BulkInsertState bistate;
-
-	/* cache memory used to store the decompressed datums/is_null for form_tuple */
-	Datum *decompressed_datums;
-	bool *decompressed_is_nulls;
-} RowDecompressor;
-
 static PerCompressedColumn *create_per_compressed_column(TupleDesc in_desc, TupleDesc out_desc,
 														 Oid out_relid,
 														 Oid compressed_data_type_oid);
 static void populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_cols,
 													  int16 num_cols, Datum *compressed_datums,
 													  bool *compressed_is_nulls);
-static void row_decompressor_decompress_row(RowDecompressor *row_decompressor);
 static bool per_compressed_col_get_data(PerCompressedColumn *per_compressed_col,
 										Datum *decompressed_datums, bool *decompressed_is_nulls);
 
@@ -1600,7 +1540,7 @@ decompress_chunk(Oid in_table, Oid out_table)
 													  compressed_datums,
 													  compressed_is_nulls);
 
-			row_decompressor_decompress_row(&decompressor);
+			row_decompressor_decompress_row(&decompressor, NULL);
 			MemoryContextSwitchTo(old_ctx);
 			MemoryContextReset(per_compressed_row_ctx);
 		}
@@ -1722,8 +1662,8 @@ populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_co
 	}
 }
 
-static void
-row_decompressor_decompress_row(RowDecompressor *row_decompressor)
+void
+row_decompressor_decompress_row(RowDecompressor *row_decompressor, Tuplestorestate *tuplesortstate)
 {
 	/* each compressed row decompresses to at least one row,
 	 * even if all the data is NULL
@@ -1751,11 +1691,20 @@ row_decompressor_decompress_row(RowDecompressor *row_decompressor)
 			HeapTuple decompressed_tuple = heap_form_tuple(row_decompressor->out_desc,
 														   row_decompressor->decompressed_datums,
 														   row_decompressor->decompressed_is_nulls);
-			heap_insert(row_decompressor->out_rel,
-						decompressed_tuple,
-						row_decompressor->mycid,
-						0 /*=options*/,
-						row_decompressor->bistate);
+			// then we're doing just decompress and we must put the decompressed into the
+			// uncompressed chunk
+			if (tuplesortstate == NULL)
+			{
+				heap_insert(row_decompressor->out_rel,
+							decompressed_tuple,
+							row_decompressor->mycid,
+							0 /*=options*/,
+							row_decompressor->bistate);
+			}
+			else
+			{
+				tuplestore_puttuple(tuplesortstate, decompressed_tuple);
+			}
 
 			heap_freetuple(decompressed_tuple);
 			wrote_data = true;
