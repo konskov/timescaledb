@@ -99,6 +99,8 @@ typedef struct CompressedSegmentInfo
 	// and an attribute
 } CompressedSegmentInfo;
 
+#define COMPRESSEDCOL_IS_SEGMENT_BY(col) 
+
 typedef struct PerCompressedColumn
 {
 	Oid decompressed_type;
