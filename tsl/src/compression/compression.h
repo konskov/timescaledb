@@ -95,7 +95,7 @@ typedef struct SegmentInfo
  */
 typedef struct CompressedSegmentInfo
 {
-	SegmentInfo segment_info;
+	SegmentInfo *segment_info;
 	// and an attribute to know which attno this is in the decompressed chunk
 	int16 decompressed_chunk_offset;
 } CompressedSegmentInfo;
@@ -236,5 +236,8 @@ extern void compress_row_end(CompressSingleRowState *cr);
 extern void compress_row_destroy(CompressSingleRowState *cr);
 extern void row_decompressor_decompress_row(RowDecompressor *row_decompressor,
 											Tuplesortstate *tuplesortstate);
+extern int16 *
+compress_chunk_populate_keys(Oid in_table, const ColumnCompressionInfo **columns, int n_columns,
+							 int *n_keys_out, const ColumnCompressionInfo ***keys_out);
 
 #endif

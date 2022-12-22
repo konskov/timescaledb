@@ -135,9 +135,6 @@ typedef struct RowCompressor
 	int64 num_compressed_rows;
 } RowCompressor;
 
-static int16 *compress_chunk_populate_keys(Oid in_table, const ColumnCompressionInfo **columns,
-										   int n_columns, int *n_keys_out,
-										   const ColumnCompressionInfo ***keys_out);
 static Tuplesortstate *compress_chunk_sort_relation(Relation in_rel, int n_keys,
 													const ColumnCompressionInfo **keys);
 static void row_compressor_init(RowCompressor *row_compressor, TupleDesc uncompressed_tuple_desc,
@@ -549,7 +546,7 @@ compress_chunk(Oid in_table, Oid out_table, const ColumnCompressionInfo **column
 	return cstat;
 }
 
-static int16 *
+int16 *
 compress_chunk_populate_keys(Oid in_table, const ColumnCompressionInfo **columns, int n_columns,
 							 int *n_keys_out, const ColumnCompressionInfo ***keys_out)
 {
