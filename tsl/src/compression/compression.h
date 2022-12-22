@@ -12,6 +12,10 @@
 #include <fmgr.h>
 #include <lib/stringinfo.h>
 #include <utils/relcache.h>
+#include <access/heapam.h> // for BulkInsertState
+#include <utils/tuplesort.h>
+// #include <utils/tuplestore.h>
+
 /*
  * Compressed data starts with a specialized varlen type starting with the usual
  * varlen header, and followed by a version specifying which compression
@@ -23,6 +27,12 @@
 #define CompressedDataHeaderFields                                                                 \
 	char vl_len_[4];                                                                               \
 	uint8 compression_algorithm
+
+#define MAX_ROWS_PER_COMPRESSION 1000
+/* gap in sequence id between rows, potential for adding rows in gap later */
+#define SEQUENCE_NUM_GAP 10
+#define COMPRESSIONCOL_IS_SEGMENT_BY(col) ((col)->segmentby_column_index > 0)
+#define COMPRESSIONCOL_IS_ORDER_BY(col) ((col)->orderby_column_index > 0)
 
 typedef struct CompressedDataHeader
 {
@@ -68,6 +78,67 @@ typedef struct DecompressionIterator
 	Oid element_type;
 	DecompressResult (*try_next)(struct DecompressionIterator *);
 } DecompressionIterator;
+
+typedef struct SegmentInfo
+{
+	Datum val;
+	FmgrInfo eq_fn;
+	FunctionCallInfo eq_fcinfo;
+	int16 typlen;
+	bool is_null;
+	bool typ_by_val;
+	Oid collation;
+} SegmentInfo;
+
+/* this struct needs the segment information, and additionally, 
+ * needs to store the 
+ */
+typedef struct CompressedSegmentInfo
+{
+	SegmentInfo segment_info;
+	// and an attribute to know which attno this is in the decompressed chunk
+	int16 decompressed_chunk_offset;
+} CompressedSegmentInfo;
+
+typedef struct PerCompressedColumn
+{
+	Oid decompressed_type;
+
+	/* the compressor to use for compressed columns, always NULL for segmenters
+	 * only use if is_compressed
+	 */
+	DecompressionIterator *iterator;
+
+	/* segment info; only used if !is_compressed */
+	Datum val;
+
+	/* is this a compressed column or a segment-by column */
+	bool is_compressed;
+
+	/* the value stored in the compressed table was NULL */
+	bool is_null;
+
+	/* the index in the decompressed table of the data -1,
+	 * if the data is metadata not found in the decompressed table
+	 */
+	int16 decompressed_column_offset;
+} PerCompressedColumn;
+
+typedef struct RowDecompressor
+{
+	PerCompressedColumn *per_compressed_cols;
+	int16 num_compressed_columns;
+
+	TupleDesc out_desc;
+	Relation out_rel;
+
+	CommandId mycid;
+	BulkInsertState bistate;
+
+	/* cache memory used to store the decompressed datums/is_null for form_tuple */
+	Datum *decompressed_datums;
+	bool *decompressed_is_nulls;
+} RowDecompressor;
 
 /*
  * TOAST_STORAGE_EXTENDED for out of line storage.
@@ -158,8 +229,12 @@ struct CompressSingleRowState;
 typedef struct CompressSingleRowState CompressSingleRowState;
 
 extern CompressSingleRowState *compress_row_init(int srcht_id, Relation in_rel, Relation out_rel);
+extern SegmentInfo *segment_info_new(Form_pg_attribute column_attr);
+extern bool segment_info_datum_is_in_group(SegmentInfo *segment_info, Datum datum, bool is_null);
 extern TupleTableSlot *compress_row_exec(CompressSingleRowState *cr, TupleTableSlot *slot);
 extern void compress_row_end(CompressSingleRowState *cr);
 extern void compress_row_destroy(CompressSingleRowState *cr);
+extern void row_decompressor_decompress_row(RowDecompressor *row_decompressor,
+											Tuplesortstate *tuplesortstate);
 
 #endif
