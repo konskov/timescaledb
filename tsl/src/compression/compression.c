@@ -593,11 +593,6 @@ compress_chunk_populate_keys(Oid in_table, const ColumnCompressionInfo **columns
 	return column_offsets;
 }
 
-static void compress_chunk_populate_sort_info_for_column(Oid table,
-														 const ColumnCompressionInfo *column,
-														 AttrNumber *att_nums, Oid *sort_operator,
-														 Oid *collation, bool *nulls_first);
-
 static Tuplesortstate *
 compress_chunk_sort_relation(Relation in_rel, int n_keys, const ColumnCompressionInfo **keys)
 {
@@ -661,7 +656,7 @@ compress_chunk_sort_relation(Relation in_rel, int n_keys, const ColumnCompressio
 	return tuplesortstate;
 }
 
-static void
+void
 compress_chunk_populate_sort_info_for_column(Oid table, const ColumnCompressionInfo *column,
 											 AttrNumber *att_nums, Oid *sort_operator,
 											 Oid *collation, bool *nulls_first)
@@ -1700,10 +1695,11 @@ row_decompressor_decompress_row(RowDecompressor *row_decompressor, Tuplesortstat
 			}
 			else
 			{
-				TupleTableSlot *heap_tuple_slot = MakeTupleTableSlot(tuplestorestate->tupDesc, &TTSOpsHeapTuple);
+				TupleTableSlot *heap_tuple_slot =
+					MakeTupleTableSlot(row_decompressor->out_desc, &TTSOpsHeapTuple);
 				ExecStoreHeapTuple(decompressed_tuple, heap_tuple_slot, false);
 
-				tuplesort_puttupleslot(tuplestorestate, decompressed_tuple);
+				tuplesort_puttupleslot(tuplestorestate, heap_tuple_slot);
 			}
 
 			heap_freetuple(decompressed_tuple);

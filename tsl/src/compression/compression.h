@@ -90,8 +90,8 @@ typedef struct SegmentInfo
 	Oid collation;
 } SegmentInfo;
 
-/* this struct needs the segment information, and additionally, 
- * needs to store the 
+/* this struct needs the segment information, and additionally,
+ * needs to store the
  */
 typedef struct CompressedSegmentInfo
 {
@@ -236,8 +236,12 @@ extern void compress_row_end(CompressSingleRowState *cr);
 extern void compress_row_destroy(CompressSingleRowState *cr);
 extern void row_decompressor_decompress_row(RowDecompressor *row_decompressor,
 											Tuplesortstate *tuplesortstate);
-extern int16 *
-compress_chunk_populate_keys(Oid in_table, const ColumnCompressionInfo **columns, int n_columns,
-							 int *n_keys_out, const ColumnCompressionInfo ***keys_out);
+extern int16 *compress_chunk_populate_keys(Oid in_table, const ColumnCompressionInfo **columns,
+										   int n_columns, int *n_keys_out,
+										   const ColumnCompressionInfo ***keys_out);
+extern void compress_chunk_populate_sort_info_for_column(Oid table,
+														 const ColumnCompressionInfo *column,
+														 AttrNumber *att_nums, Oid *sort_operator,
+														 Oid *collation, bool *nulls_first);
 
 #endif
