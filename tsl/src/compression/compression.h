@@ -14,6 +14,8 @@
 #include <utils/relcache.h>
 #include <access/heapam.h> // for BulkInsertState
 #include <utils/tuplesort.h>
+#include "segment_meta.h"
+#include <utils/sortsupport.h>
 // #include <utils/tuplestore.h>
 
 /*
@@ -185,6 +187,61 @@ typedef struct CompressionStats
 	int64 rowcnt_post_compression;
 } CompressionStats;
 
+typedef struct PerColumn
+{
+	/* the compressor to use for regular columns, NULL for segmenters */
+	Compressor *compressor;
+	/*
+	 * Information on the metadata we'll store for this column (currently only min/max).
+	 * Only used for order-by columns right now, will be {-1, NULL} for others.
+	 */
+	int16 min_metadata_attr_offset;
+	int16 max_metadata_attr_offset;
+	SegmentMetaMinMaxBuilder *min_max_metadata_builder;
+
+	/* segment info; only used if compressor is NULL */
+	SegmentInfo *segment_info;
+	int16 segmentby_column_index;
+} PerColumn;
+
+typedef struct RowCompressor
+{
+	/* memory context reset per-row is stored */
+	MemoryContext per_row_ctx;
+
+	/* the table we're writing the compressed data to */
+	Relation compressed_table;
+	BulkInsertState bistate;
+	/* segment by index Oid if any */
+	Oid index_oid;
+
+	/* in theory we could have more input columns than outputted ones, so we
+	   store the number of inputs/compressors seperately*/
+	int n_input_columns;
+
+	/* info about each column */
+	struct PerColumn *per_column;
+
+	/* the order of columns in the compressed data need not match the order in the
+	 * uncompressed. This array maps each attribute offset in the uncompressed
+	 * data to the corresponding one in the compressed
+	 */
+	int16 *uncompressed_col_to_compressed_col;
+	int16 count_metadata_column_offset;
+	int16 sequence_num_metadata_column_offset;
+
+	/* the number of uncompressed rows compressed into the current compressed row */
+	uint32 rows_compressed_into_current_value;
+	/* a unique monotonically increasing (according to order by) id for each compressed row */
+	int32 sequence_num;
+
+	/* cached arrays used to build the HeapTuple */
+	Datum *compressed_values;
+	bool *compressed_is_null;
+	int64 rowcnt_pre_compression;
+	int64 num_compressed_rows;
+} RowCompressor;
+
 extern Datum tsl_compressed_data_decompress_forward(PG_FUNCTION_ARGS);
 extern Datum tsl_compressed_data_decompress_reverse(PG_FUNCTION_ARGS);
 extern Datum tsl_compressed_data_send(PG_FUNCTION_ARGS);
@@ -243,5 +300,8 @@ extern void compress_chunk_populate_sort_info_for_column(Oid table,
 														 const ColumnCompressionInfo *column,
 														 AttrNumber *att_nums, Oid *sort_operator,
 														 Oid *collation, bool *nulls_first);
+extern PerCompressedColumn *create_per_compressed_column(TupleDesc in_desc, TupleDesc out_desc,
+														 Oid out_relid,
+														 Oid compressed_data_type_oid);
 
 #endif

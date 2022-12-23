@@ -80,61 +80,6 @@ DecompressionIterator *(*tsl_get_decompression_iterator_init(CompressionAlgorith
 		return definitions[algorithm].iterator_init_forward;
 }
 
-typedef struct PerColumn
-{
-	/* the compressor to use for regular columns, NULL for segmenters */
-	Compressor *compressor;
-	/*
-	 * Information on the metadata we'll store for this column (currently only min/max).
-	 * Only used for order-by columns right now, will be {-1, NULL} for others.
-	 */
-	int16 min_metadata_attr_offset;
-	int16 max_metadata_attr_offset;
-	SegmentMetaMinMaxBuilder *min_max_metadata_builder;
-
-	/* segment info; only used if compressor is NULL */
-	SegmentInfo *segment_info;
-	int16 segmentby_column_index;
-} PerColumn;
-
-typedef struct RowCompressor
-{
-	/* memory context reset per-row is stored */
-	MemoryContext per_row_ctx;
-
-	/* the table we're writing the compressed data to */
-	Relation compressed_table;
-	BulkInsertState bistate;
-	/* segment by index Oid if any */
-	Oid index_oid;
-
-	/* in theory we could have more input columns than outputted ones, so we
-	   store the number of inputs/compressors seperately*/
-	int n_input_columns;
-
-	/* info about each column */
-	struct PerColumn *per_column;
-
-	/* the order of columns in the compressed data need not match the order in the
-	 * uncompressed. This array maps each attribute offset in the uncompressed
-	 * data to the corresponding one in the compressed
-	 */
-	int16 *uncompressed_col_to_compressed_col;
-	int16 count_metadata_column_offset;
-	int16 sequence_num_metadata_column_offset;
-
-	/* the number of uncompressed rows compressed into the current compressed row */
-	uint32 rows_compressed_into_current_value;
-	/* a unique monotonically increasing (according to order by) id for each compressed row */
-	int32 sequence_num;
-
-	/* cached arrays used to build the HeapTuple */
-	Datum *compressed_values;
-	bool *compressed_is_null;
-	int64 rowcnt_pre_compression;
-	int64 num_compressed_rows;
-} RowCompressor;
-
 static Tuplesortstate *compress_chunk_sort_relation(Relation in_rel, int n_keys,
 													const ColumnCompressionInfo **keys);
 static void row_compressor_init(RowCompressor *row_compressor, TupleDesc uncompressed_tuple_desc,
@@ -1445,9 +1390,6 @@ segment_info_datum_is_in_group(SegmentInfo *segment_info, Datum datum, bool is_n
  ** decompress_chunk **
  **********************/
 
-static PerCompressedColumn *create_per_compressed_column(TupleDesc in_desc, TupleDesc out_desc,
-														 Oid out_relid,
-														 Oid compressed_data_type_oid);
 static void populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_cols,
 													  int16 num_cols, Datum *compressed_datums,
 													  bool *compressed_is_nulls);
@@ -1563,7 +1505,7 @@ decompress_chunk(Oid in_table, Oid out_table)
 	table_close(in_rel, NoLock);
 }
 
-static PerCompressedColumn *
+PerCompressedColumn *
 create_per_compressed_column(TupleDesc in_desc, TupleDesc out_desc, Oid out_relid,
 							 Oid compressed_data_type_oid)
 {

@@ -1100,9 +1100,9 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 	RowDecompressor decompressor = {
 		.per_compressed_cols = create_per_compressed_column(compressed_rel_tupdesc,
 															uncompressed_rel_tupdesc,
-															out_table,
+															uncompressed_chunk->table_id,
 															compressed_data_type_oid),
-		.num_compressed_columns = in_desc->natts,
+		.num_compressed_columns = compressed_rel_tupdesc->natts,
 
 		.out_desc = uncompressed_rel_tupdesc,
 		.out_rel = NULL,
@@ -1111,14 +1111,14 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 		.bistate = GetBulkInsertState(),
 
 		/* cache memory used to store the decompressed datums/is_null for form_tuple */
-		.decompressed_datums = palloc(sizeof(Datum) * out_desc->natts),
-		.decompressed_is_nulls = palloc(sizeof(bool) * out_desc->natts),
+		.decompressed_datums = palloc(sizeof(Datum) * uncompressed_rel_tupdesc->natts),
+		.decompressed_is_nulls = palloc(sizeof(bool) * uncompressed_rel_tupdesc->natts),
 	};
 
-	memset(decompressor.decompressed_is_nulls, true, out_desc->natts);
+	memset(decompressor.decompressed_is_nulls, true, uncompressed_rel_tupdesc->natts);
 
-	Datum *compressed_datums = palloc(sizeof(*compressed_datums) * in_desc->natts);
-	bool *compressed_is_nulls = palloc(sizeof(*compressed_is_nulls) * in_desc->natts);
+	Datum *compressed_datums = palloc(sizeof(*compressed_datums) * compressed_rel_tupdesc->natts);
+	bool *compressed_is_nulls = palloc(sizeof(*compressed_is_nulls) * compressed_rel_tupdesc->natts);
 
 	/********** row compressor *******************/
 	RowCompressor row_compressor;
