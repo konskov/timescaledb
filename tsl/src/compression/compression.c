@@ -82,13 +82,6 @@ DecompressionIterator *(*tsl_get_decompression_iterator_init(CompressionAlgorith
 
 static Tuplesortstate *compress_chunk_sort_relation(Relation in_rel, int n_keys,
 													const ColumnCompressionInfo **keys);
-static void row_compressor_init(RowCompressor *row_compressor, TupleDesc uncompressed_tuple_desc,
-								Relation compressed_table, int num_compression_infos,
-								const ColumnCompressionInfo **column_compression_info,
-								int16 *column_offsets, int16 num_columns_in_compressed_table,
-								bool need_bistate);
-static void row_compressor_append_sorted_rows(RowCompressor *row_compressor,
-											  Tuplesortstate *sorted_rel, TupleDesc sorted_desc);
 static void row_compressor_finish(RowCompressor *row_compressor);
 static void row_compressor_update_group(RowCompressor *row_compressor, TupleTableSlot *row);
 static bool row_compressor_new_row_is_in_new_group(RowCompressor *row_compressor,
@@ -884,7 +877,7 @@ get_sequence_number_for_current_group(Relation table_rel, Oid index_oid,
  ** row_compressor **
  ********************/
 /* num_compression_infos is the number of columns we will write to in the compressed table */
-static void
+void
 row_compressor_init(RowCompressor *row_compressor, TupleDesc uncompressed_tuple_desc,
 					Relation compressed_table, int num_compression_infos,
 					const ColumnCompressionInfo **column_compression_info, int16 *in_column_offsets,
@@ -1009,7 +1002,7 @@ row_compressor_init(RowCompressor *row_compressor, TupleDesc uncompressed_tuple_
 								   row_compressor->n_input_columns);
 }
 
-static void
+void
 row_compressor_append_sorted_rows(RowCompressor *row_compressor, Tuplesortstate *sorted_rel,
 								  TupleDesc sorted_desc)
 {
@@ -1390,9 +1383,6 @@ segment_info_datum_is_in_group(SegmentInfo *segment_info, Datum datum, bool is_n
  ** decompress_chunk **
  **********************/
 
-static void populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_cols,
-													  int16 num_cols, Datum *compressed_datums,
-													  bool *compressed_is_nulls);
 static bool per_compressed_col_get_data(PerCompressedColumn *per_compressed_col,
 										Datum *decompressed_datums, bool *decompressed_is_nulls);
 
@@ -1564,7 +1554,7 @@ create_per_compressed_column(TupleDesc in_desc, TupleDesc out_desc, Oid out_reli
 	return per_compressed_cols;
 }
 
-static void
+void
 populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_cols, int16 num_cols,
 										  Datum *compressed_datums, bool *compressed_is_nulls)
 {

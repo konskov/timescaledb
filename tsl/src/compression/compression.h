@@ -303,5 +303,15 @@ extern void compress_chunk_populate_sort_info_for_column(Oid table,
 extern PerCompressedColumn *create_per_compressed_column(TupleDesc in_desc, TupleDesc out_desc,
 														 Oid out_relid,
 														 Oid compressed_data_type_oid);
+extern void row_compressor_init(RowCompressor *row_compressor, TupleDesc uncompressed_tuple_desc,
+								Relation compressed_table, int num_compression_infos,
+								const ColumnCompressionInfo **column_compression_info,
+								int16 *column_offsets, int16 num_columns_in_compressed_table,
+								bool need_bistate);
+extern void populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_cols,
+													  int16 num_cols, Datum *compressed_datums,
+													  bool *compressed_is_nulls);
+extern void row_compressor_append_sorted_rows(RowCompressor *row_compressor,
+											  Tuplesortstate *sorted_rel, TupleDesc sorted_desc);
 
 #endif
