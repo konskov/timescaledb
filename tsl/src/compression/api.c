@@ -1059,7 +1059,7 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 	/************* need this for sorting my tuples *****************/
 	const ColumnCompressionInfo **keys;
 	int n_keys;
-	int16 *in_column_offsets = compress_chunk_populate_keys(uncompressed_chunk->fd.id,
+	int16 *in_column_offsets = compress_chunk_populate_keys(uncompressed_chunk->table_id,
 															colinfo_array,
 															htcols_listlen,
 															&n_keys,
@@ -1151,6 +1151,11 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 	CompressedSegmentInfo **current_segment =
 		palloc(sizeof(CompressedSegmentInfo *) *
 			   nsegmentby_cols); // only keep the current segmenby col values
+	// also need to allocate the memory for the individual pointers here
+	for (int i = 0; i < nsegmentby_cols; i++)
+	{
+		current_segment[i] = palloc(sizeof(CompressedSegmentInfo));
+	}
 	bool first_iteration = true;
 	// ScanKeyData *scankey_compressed = NULL, *scankey_uncompressed = NULL;
 
@@ -1164,10 +1169,11 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 		int col = 0;
 		slot_getallattrs(slot);
 
+		// heap_deform_tuple(compressed_tuple, in_desc, compressed_datums, compressed_is_nulls);
 		populate_per_compressed_columns_from_data(decompressor.per_compressed_cols,
 												  compressed_rel_tupdesc->natts,
-												  compressed_datums,
-												  compressed_is_nulls);
+												  slot->tts_values/*compressed_datums*/,
+												  slot->tts_isnull/*compressed_is_nulls*/);
 
 		if (first_iteration)
 		{
@@ -1182,9 +1188,9 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 				if (compressed_chunk_column_is_segmentby(&decompressor.per_compressed_cols[col]))
 				{
 					segment_info = segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, col));
-					current_segment[i]->segment_info = segment_info;
 					current_segment[i]->decompressed_chunk_offset =
 						decompressor.per_compressed_cols[col].decompressed_column_offset;
+					current_segment[i]->segment_info = segment_info;
 					i++;
 				}
 			}
