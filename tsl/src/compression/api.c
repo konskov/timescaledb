@@ -1036,17 +1036,18 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 	/* convert list to array of pointers for compress_chunk */
 	colinfo_array = palloc(sizeof(ColumnCompressionInfo *) * htcols_listlen);
 
-	List *segmentby_cols; // list of segby cols offsets
-	int nsegmentby_cols;
+	// List *segmentby_cols; // list of segby cols offsets
+	int nsegmentby_cols = 0;
 
 	foreach (lc, htcols_list)
 	{
 		FormData_hypertable_compression *fd = (FormData_hypertable_compression *) lfirst(lc);
 		colinfo_array[i++] = fd;
 		if (COMPRESSIONCOL_IS_SEGMENT_BY(fd))
-			segmentby_cols = lappend_int(segmentby_cols, fd->segmentby_column_index);
+			// segmentby_cols = lappend_int(segmentby_cols, fd->segmentby_column_index);
+			nsegmentby_cols++;
 	}
-	nsegmentby_cols = list_length(segmentby_cols);
+	// nsegmentby_cols = list_length(segmentby_cols);
 
 	/* lock both chunks, compresssed and uncompressed */
 	/* we need to read the uncompressed chunk, and finally truncate it, but we also want to
