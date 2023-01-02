@@ -90,7 +90,6 @@ static void row_compressor_append_row(RowCompressor *row_compressor, TupleTableS
 static void row_compressor_flush(RowCompressor *row_compressor, CommandId mycid,
 								 bool changed_groups);
 
-static void segment_info_update(SegmentInfo *segment_info, Datum val, bool is_null);
 static void run_analyze_on_chunk(Oid chunk_relid);
 
 /********************
@@ -1342,7 +1341,7 @@ segment_info_new(Form_pg_attribute column_attr)
 	return segment_info;
 }
 
-static void
+void
 segment_info_update(SegmentInfo *segment_info, Datum val, bool is_null)
 {
 	segment_info->is_null = is_null;

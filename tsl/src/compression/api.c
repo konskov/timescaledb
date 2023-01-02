@@ -907,17 +907,18 @@ recompress_segment(Tuplesortstate *tuplesortstate, Relation compressed_chunk_rel
 									  RelationGetDescr(compressed_chunk_rel));
 }
 
+// TODO; check what conditions apply here
 static bool
-compressed_chunk_column_is_segmentby(PerCompressedColumn *per_compressed_col)
+compressed_chunk_column_is_segmentby(PerCompressedColumn per_compressed_col)
 {
-	// not compressed and not metadata
-	return !per_compressed_col->is_compressed &&
-		   per_compressed_col->decompressed_column_offset != -1;
+	// not compressed and not metadata, offset should be -1 for metadata
+	return !per_compressed_col.is_compressed &&
+		   per_compressed_col.decompressed_column_offset >= 0;
 }
 
 static void
 decompress_segment_update_current_segment(CompressedSegmentInfo **current_segment,
-										  TupleTableSlot *slot, PerCompressedColumn **per_cols)
+										  TupleTableSlot *slot, PerCompressedColumn *per_cols)
 {
 	Datum val;
 	bool is_null;
@@ -934,12 +935,12 @@ decompress_segment_update_current_segment(CompressedSegmentInfo **current_segmen
 												is_null))
 			{
 				// new segment, need to call per-segment processing
-				pfree(current_segment[seg_idx - 1]); // bacause increased previously
+				pfree(current_segment[seg_idx - 1]->segment_info); // bacause increased previously
 				SegmentInfo *segment_info =
-					segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, i - 1));
+					segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, i)); // was i -1 but i think shoud be i
 				current_segment[seg_idx - 1]->segment_info = segment_info;
 				current_segment[seg_idx - 1]->decompressed_chunk_offset =
-					per_cols[i]->decompressed_column_offset;
+					per_cols[i].decompressed_column_offset;
 			}
 		}
 	}
@@ -949,13 +950,16 @@ static bool
 decompress_segment_changed_group(CompressedSegmentInfo **current_segment, TupleTableSlot *slot,
 								 PerCompressedColumn **per_cols)
 {
+	PerCompressedColumn *decompressor_per_compressed_cols = *per_cols;
 	Datum val;
 	bool is_null;
 	bool changed_segment = false;
 	int seg_idx = 0;
 	for (int i = 0; i < slot->tts_tupleDescriptor->natts; i++)
 	{
-		if (!compressed_chunk_column_is_segmentby(per_cols[i]))
+		// if (decompressor_per_compressed_cols[i] == NULL)
+		// 	continue;
+		if (!compressed_chunk_column_is_segmentby(decompressor_per_compressed_cols[i]))
 			continue;
 		else
 		{
@@ -1178,18 +1182,20 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 		if (first_iteration)
 		{
 			first_iteration = false;
-			// Datum val;
-			// bool is_null;
+			Datum val;
+			bool is_null;
 			// get current segment
 			// for attr in slot - check if it's a segby col, then keep in current segment
 			for (col = 0; col < htcols_listlen; col++)
 			{
-				// val = slot_getattr(slot, AttrOffsetGetAttrNumber(col), &is_null);
-				if (compressed_chunk_column_is_segmentby(&decompressor.per_compressed_cols[col]))
+				val = slot_getattr(slot, AttrOffsetGetAttrNumber(col), &is_null);
+				if (compressed_chunk_column_is_segmentby(decompressor.per_compressed_cols[col]))
 				{
 					segment_info = segment_info_new(TupleDescAttr(slot->tts_tupleDescriptor, col));
 					current_segment[i]->decompressed_chunk_offset =
 						decompressor.per_compressed_cols[col].decompressed_column_offset;
+					// also need to call segment_info_update here to update the val part
+					segment_info_update(segment_info, val, is_null);
 					current_segment[i]->segment_info = segment_info;
 					i++;
 				}
@@ -1226,6 +1232,16 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 		else
 		// changed segment
 		{
+			// reinit tuplesort
+			segment_tuplesortstate = tuplesort_begin_heap(uncompressed_rel_tupdesc,
+												  n_keys,
+												  sort_keys,
+												  sort_operators,
+												  sort_collations,
+												  nulls_first,
+												  maintenance_work_mem,
+												  NULL,
+												  false);
 			// fetch the tuples from the uncompressed chunk for the segment that just finished
 			TableScanDesc heapScan;
 			HeapTuple uncompressed_tuple;
@@ -1256,8 +1272,10 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 				 uncompressed_tuple != NULL;
 				 uncompressed_tuple = heap_getnext(heapScan, ForwardScanDirection))
 			{
-				ExecStoreHeapTuple(uncompressed_tuple, slot, false);
-				tuplesort_puttupleslot(segment_tuplesortstate, slot);
+				TupleTableSlot *heap_tuple_slot =
+					MakeTupleTableSlot(uncompressed_rel_tupdesc, &TTSOpsHeapTuple);
+				ExecStoreHeapTuple(uncompressed_tuple, heap_tuple_slot, false);
+				tuplesort_puttupleslot(segment_tuplesortstate, heap_tuple_slot);
 				// simple_heap_delete since we don't expect concurrent updates,
 				// we have exclusive lock on the relation
 				simple_heap_delete(uncompressed_chunk_rel, &uncompressed_tuple->t_self);
@@ -1266,8 +1284,8 @@ tsl_recompress_chunk_experimental(PG_FUNCTION_ARGS)
 			tuplesort_performsort(segment_tuplesortstate);
 			// and finally update the segment
 			decompress_segment_update_current_segment(current_segment,
-													  slot,
-													  &decompressor.per_compressed_cols);
+													  slot, // should this be slot (compressed?)
+													  decompressor.per_compressed_cols);
 			// now let's recompress and write the recompressed segment into the compressed chunk
 			recompress_segment(segment_tuplesortstate,
 							   compressed_chunk_rel,
