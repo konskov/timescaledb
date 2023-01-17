@@ -222,29 +222,29 @@ truncate_relation(Oid table_oid)
 }
 
 
-void inspect_tuplesortstate(Tuplesortstate *tuplesort, TupleDesc desc, bool already_sorted)
-{
-	if (!already_sorted)
-		tuplesort_performsort(tuplesort);
-	bool got_tuple;
-	TupleTableSlot *slot = MakeTupleTableSlot(desc, &TTSOpsMinimalTuple);
-	for (got_tuple = tuplesort_gettupleslot(tuplesort,
-											true /*=forward*/,
-											false /*=copy*/,
-											slot,
-											NULL /*=abbrev*/);
-		 got_tuple;
-		 got_tuple = tuplesort_gettupleslot(tuplesort,
-											true /*=forward*/,
-											false /*=copy*/,
-											slot,
-											NULL /*=abbrev*/))
-	{
-		slot_getallattrs(slot);
-		// now you can inspect the slot if you like
-	}
-	ExecDropSingleTupleTableSlot(slot);
-}
+// void inspect_tuplesortstate(Tuplestorestate *tuplesort, TupleDesc desc, bool already_sorted)
+// {
+// 	if (!already_sorted)
+// 		tuplesort_performsort(tuplesort);
+// 	bool got_tuple;
+// 	TupleTableSlot *slot = MakeTupleTableSlot(desc, &TTSOpsMinimalTuple);
+// 	for (got_tuple = tuplesort_gettupleslot(tuplesort,
+// 											true /*=forward*/,
+// 											false /*=copy*/,
+// 											slot,
+// 											NULL /*=abbrev*/);
+// 		 got_tuple;
+// 		 got_tuple = tuplesort_gettupleslot(tuplesort,
+// 											true /*=forward*/,
+// 											false /*=copy*/,
+// 											slot,
+// 											NULL /*=abbrev*/))
+// 	{
+// 		slot_getallattrs(slot);
+// 		// now you can inspect the slot if you like
+// 	}
+// 	ExecDropSingleTupleTableSlot(slot);
+// }
 
 
 CompressionStats
@@ -1028,6 +1028,67 @@ row_compressor_init(RowCompressor *row_compressor, TupleDesc uncompressed_tuple_
 								   row_compressor->n_input_columns);
 }
 
+
+/* this should be a wrapper around row_compressor_append_sorted_rows */
+void
+recompress_segment(Tuplestorestate *sorted_rel, Relation compressed_chunk_rel,
+				   RowCompressor *row_compressor)
+{
+	TupleDesc sorted_desc = RelationGetDescr(compressed_chunk_rel);
+	CommandId mycid;
+	// CommandId mycid = GetCurrentCommandId(true);
+	TupleTableSlot *slot = MakeTupleTableSlot(sorted_desc, &TTSOpsMinimalTuple);
+	bool got_tuple;
+	bool first_iteration = true;
+
+	for (got_tuple = tuplestore_gettupleslot(sorted_rel,
+											true /*=forward*/,
+											false /*=copy*/,
+											slot);
+		 got_tuple;
+		 got_tuple = tuplestore_gettupleslot(sorted_rel,
+											true /*=forward*/,
+											false /*=copy*/,
+											slot))
+	{
+		bool changed_groups, compressed_row_is_full;
+		MemoryContext old_ctx;
+		slot_getallattrs(slot);
+		elog(DEBUG1, "noop");
+		old_ctx = MemoryContextSwitchTo(row_compressor->per_row_ctx);
+
+		/* first time through */
+		if (first_iteration)
+		{
+			row_compressor_update_group(row_compressor, slot);
+			first_iteration = false;
+		}
+
+		changed_groups = row_compressor_new_row_is_in_new_group(row_compressor, slot);
+		compressed_row_is_full =
+			row_compressor->rows_compressed_into_current_value >= MAX_ROWS_PER_COMPRESSION;
+
+		mycid = GetCurrentCommandId(true);
+
+		if (compressed_row_is_full || changed_groups)
+		{
+			if (row_compressor->rows_compressed_into_current_value > 0)
+				row_compressor_flush(row_compressor, mycid, changed_groups);
+			if (changed_groups)
+				row_compressor_update_group(row_compressor, slot);
+		}
+
+		row_compressor_append_row(row_compressor, slot);
+		MemoryContextSwitchTo(old_ctx);
+		ExecClearTuple(slot);
+	}
+
+	if (row_compressor->rows_compressed_into_current_value > 0)
+		row_compressor_flush(row_compressor, mycid, true);
+
+	ExecDropSingleTupleTableSlot(slot);
+}
+
 void
 row_compressor_append_sorted_rows(RowCompressor *row_compressor, Tuplesortstate *sorted_rel,
 								  TupleDesc sorted_desc)
@@ -1618,7 +1679,7 @@ populate_per_compressed_columns_from_data(PerCompressedColumn *per_compressed_co
 }
 
 void
-row_decompressor_decompress_row(RowDecompressor *row_decompressor, Tuplesortstate *tuplestorestate)
+row_decompressor_decompress_row(RowDecompressor *row_decompressor, Tuplestorestate *tuplestorestate)
 {
 	/* each compressed row decompresses to at least one row,
 	 * even if all the data is NULL
@@ -1680,7 +1741,7 @@ row_decompressor_decompress_row(RowDecompressor *row_decompressor, Tuplesortstat
 
 				// tuplesort_putheaptuple(tuplestorestate, decompressed_tuple);
 
-				tuplesort_puttupleslot(tuplestorestate, slot);
+				tuplestore_puttupleslot(tuplestorestate, slot);
 				ExecDropSingleTupleTableSlot(slot);
 			}
 

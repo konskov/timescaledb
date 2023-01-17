@@ -16,7 +16,7 @@
 #include <utils/tuplesort.h>
 #include "segment_meta.h"
 #include <utils/sortsupport.h>
-// #include <utils/tuplestore.h>
+#include <utils/tuplestore.h>
 
 /*
  * Compressed data starts with a specialized varlen type starting with the usual
@@ -292,7 +292,7 @@ extern TupleTableSlot *compress_row_exec(CompressSingleRowState *cr, TupleTableS
 extern void compress_row_end(CompressSingleRowState *cr);
 extern void compress_row_destroy(CompressSingleRowState *cr);
 extern void row_decompressor_decompress_row(RowDecompressor *row_decompressor,
-											Tuplesortstate *tuplesortstate);
+											Tuplestorestate *tuplesortstate);
 extern int16 *compress_chunk_populate_keys(Oid in_table, const ColumnCompressionInfo **columns,
 										   int n_columns, int *n_keys_out,
 										   const ColumnCompressionInfo ***keys_out);
@@ -315,5 +315,9 @@ extern void row_compressor_append_sorted_rows(RowCompressor *row_compressor,
 											  Tuplesortstate *sorted_rel, TupleDesc sorted_desc);
 extern void segment_info_update(SegmentInfo *segment_info, Datum val, bool is_null);
 
-extern void inspect_tuplesortstate(Tuplesortstate *tuplesort, TupleDesc desc, bool already_sorted);
+extern void inspect_tuplesortstate(Tuplestorestate *tuplesort, TupleDesc desc, bool already_sorted);
+
+extern void
+recompress_segment(Tuplestorestate *sorted_rel, Relation compressed_chunk_rel,
+				   RowCompressor *row_compressor);
 #endif
