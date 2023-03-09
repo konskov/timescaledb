@@ -742,13 +742,15 @@ ts_chunk_insert_state_destroy(ChunkInsertState *state)
 	{
 		// release the Share lock on the catalog row by doing an UnlockRelationOid
 		Catalog *catalog = ts_catalog_get();
-		// UnlockRelationOid(catalog_get_table_id(catalog, CHUNK), AccessShareLock); // this doesn't seem to work
-		Relation chunk_catalog_rel = relation_open(catalog_get_table_id(catalog, CHUNK), AccessShareLock);
+		Oid chunk_table_id = catalog_get_table_id(catalog, CHUNK);
+		// Relation chunk_catalog_rel = relation_open(chunk_table_id, RowShareLock);
+		relation_close(RelationIdGetRelation(chunk_table_id), AccessShareLock);
+
 		// relation_close(chunk_catalog_rel, AccessShareLock);
 		// UnlockTupleTuplock(relation, &(tp.t_self), LockTupleExclusive);
-		RelationDecrementReferenceCount(chunk_catalog_rel); // because opened by the scan?
-		chunk_catalog_unlock_row_in_mode(chunk_catalog_rel, state->chunk_id, LockTupleShare, AccessShareLock, SCANNER_F_NOFLAGS);
-		relation_close(chunk_catalog_rel, AccessShareLock);
+		// RelationDecrementReferenceCount(chunk_catalog_rel); // because opened by the scan?
+		// chunk_catalog_unlock_row_in_mode(chunk_catalog_rel, state->chunk_id, LockTupleShare, AccessShareLock, SCANNER_F_NOFLAGS);
+
 		Oid chunk_relid = RelationGetRelid(state->result_relation_info->ri_RelationDesc);
 		Chunk *chunk = ts_chunk_get_by_relid(chunk_relid, true);
 		ts_chunk_set_partial(chunk);
