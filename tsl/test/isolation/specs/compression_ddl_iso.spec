@@ -120,7 +120,7 @@ step "RC1" {
 permutation "LockChunk1" "I1" "C1" "UnlockChunk" "Ic" "Cc" "SC1" "S1"
 
 #Compress in progress, insert is blocked
-permutation "LockChunk1" "C1" "I1" "UnlockChunk" "Cc" "Ic"
+permutation "LockChunk1" "C1" "I1" "UnlockChunk" "Cc" "Ic" "SC1" "S1" "SChunkStat"
 
 #if ddl in progress, compress_chunk blocked
 permutation "LockChunk1" "A1" "C1" "UnlockChunk" "Cc" "A2"
@@ -145,3 +145,9 @@ permutation "C1" "Cc" "LockChunkTuple" "I1" "IN1"  "UnlockChunkTuple" "Ic" "INc"
 # - Then start concurrent processes both recompress_chunk and insert
 # - Wait for lock on the chunk.
 permutation "CA1" "CAc" "I1" "Ic" "SChunkStat" "LockChunk1" "RC1" "IN1"  "UnlockChunk" "INc" "SH"
+
+
+# INSERT - INSERT into uncompressed chunk
+permutation "LockChunk1" "I1" "IN1" "UnlockChunk" "Ic" "INc" "SC1" "S1"
+# INSERT - INSERT into compressed chunk
+permutation "C1" "Cc" "LockChunk1" "I1" "IN1" "UnlockChunk" "Ic" "INc" "SC1" "S1"

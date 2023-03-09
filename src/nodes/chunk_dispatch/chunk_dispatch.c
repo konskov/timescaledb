@@ -97,7 +97,7 @@ ts_chunk_dispatch_get_chunk_insert_state(ChunkDispatch *dispatch, Point *point,
 		// chunk_catalog_lock_row_in_mode(chunk->fd.id, LockTupleExclusive, AccessShareLock, SCANNER_F_KEEPLOCK);
 
 		// elog(WARNING, "AFTER chunk_catalog_lock_row_in_mode");
-		Chunk *chunk = ts_hypertable_find_chunk_for_point(dispatch->hypertable, point, SCANNER_F_KEEPLOCK);
+		Chunk *chunk = ts_hypertable_find_chunk_for_point(dispatch->hypertable, point, 0);
 
 #if PG14_GE
 		/*
@@ -150,6 +150,13 @@ ts_chunk_dispatch_get_chunk_insert_state(ChunkDispatch *dispatch, Point *point,
 		on_chunk_changed(cis, data);
 
 	Assert(cis != NULL);
+
+	if (cis->chunk_compressed && !cis->chunk_partial)
+		chunk_catalog_lock_row_in_mode(cis->chunk_id, LockTupleExclusive, RowExclusiveLock, SCANNER_F_KEEPLOCK);
+	if (cis->chunk_partial && cis->chunk_partial)
+		chunk_catalog_lock_row_in_mode(cis->chunk_id, LockTupleExclusive, AccessShareLock, SCANNER_F_KEEPLOCK);
+	else 
+
 	dispatch->prev_cis = cis;
 	dispatch->prev_cis_oid = cis->rel->rd_id;
 	return cis;
