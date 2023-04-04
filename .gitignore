@@ -18,6 +18,7 @@ typedef.list
 /test/log
 /test/temp_schedule
 /build*
+/release_build*
 **/GPATH
 **/GTAGS
 **/GRTAGS

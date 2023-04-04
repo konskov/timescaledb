@@ -93,11 +93,8 @@ ts_chunk_dispatch_get_chunk_insert_state(ChunkDispatch *dispatch, Point *point,
 		bool found;
 		// elog(WARNING, "BEFORE chunk_catalog_lock_row_in_mode");
 
-		// /* lock the catalog row for this chunk */
-		// chunk_catalog_lock_row_in_mode(chunk->fd.id, LockTupleExclusive, AccessShareLock, SCANNER_F_KEEPLOCK);
-
 		// elog(WARNING, "AFTER chunk_catalog_lock_row_in_mode");
-		Chunk *chunk = ts_hypertable_find_chunk_for_point(dispatch->hypertable, point, SCANNER_F_KEEPLOCK);
+		Chunk *chunk = ts_hypertable_find_chunk_for_point(dispatch->hypertable, point, 0);
 
 #if PG14_GE
 		/*
@@ -113,6 +110,9 @@ ts_chunk_dispatch_get_chunk_insert_state(ChunkDispatch *dispatch, Point *point,
 		}
 		else
 			found = true;
+
+		// /* lock the catalog row for this chunk */
+		chunk_catalog_lock_row_in_mode(chunk->fd.id, LockTupleExclusive, AccessShareLock, SCANNER_F_KEEPLOCK);
 
 		/* get the filtered list of "available" DNs for this chunk but only if it's replicated */
 		if (found && dispatch->hypertable->fd.replication_factor > 1)
