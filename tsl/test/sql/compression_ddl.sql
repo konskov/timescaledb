@@ -821,3 +821,32 @@ GROUP BY device_id;
 SET enable_seqscan = default;
 
 DROP TABLE compression_insert;
+
+-- check plans for partially compressed chunks
+create table kon (time timestamptz not null, a int, b int);
+select create_hypertable('kon', 'time');
+
+insert into kon values
+('2020-01-01 00:00'::timestamptz, 1, 2),
+('2020-01-01 00:01'::timestamptz, 2, 2),
+('2020-01-01 00:02'::timestamptz, 1, 2),
+('2021-01-01 00:00'::timestamptz, 1, 2);
+
+-- two chunks, check plan
+explain (costs off) select * from kon order by time;
+-- enable compression, compress both chunks
+alter table kon set (timescaledb.compress);
+select compress_chunk(show_chunks('kon'));
+explain (costs off) select * from kon order by time;
+-- make second chunk partially compressed
+insert into kon values ('2021-01-01 00:03', 1, 3);
+-- check optimal plan selected
+explain (costs off) select * from kon order by time;
+-- check correctness of results
+select * from kon order by time;
+-- make first chunk partialy compresed
+insert into kon values ('2020-01-01 00:03', 1, 3);
+explain (costs off) select * from kon order by time;
+select * from kon order by time;
+
+-- check partial paths: partial paths appear in parallel plans, so force parallel plan here

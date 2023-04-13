@@ -253,6 +253,7 @@ ts_chunk_append_path_create(PlannerInfo *root, RelOptInfo *rel, Hypertable *ht, 
 
 			if (list_length(merge_childs) > 1)
 			{
+				// this is what returns the mergeAppend node
 				append = create_merge_append_path_compat(root,
 														 rel,
 														 merge_childs,
