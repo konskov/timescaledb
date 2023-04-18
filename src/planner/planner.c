@@ -928,6 +928,8 @@ should_chunk_append(Hypertable *ht, PlannerInfo *root, RelOptInfo *rel, Path *pa
 				 * ordered append. We instead need nested Appends to correctly preserve
 				 * ordering. For now we skip ordered append optimization when we encounter
 				 * partial chunks.
+				 * Now we do not skip it, we move the check for partial chunks to the place
+				 * where we do the chunk append for space partitioned hypertables.
 				 */
 				foreach (lc, merge->subpaths)
 				{

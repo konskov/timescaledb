@@ -195,8 +195,88 @@ ts_chunk_append_path_create(PlannerInfo *root, RelOptInfo *rel, Hypertable *ht, 
 			break;
 	}
 
+	List *new_children = NIL;
+	// this is where we will convert the sort nodes from the children into a mergeAppend node
+	// we'll skip this if we don't have several children
+	if (list_length(children) >= 2)
+	{
+		List *merge_children = NIL;
+		Path *previous_child = linitial(children), *current_child = lsecond(children);
+
+		/* these two children belong to the same chunk (compressed and uncompressed parts) */
+		if (previous_child->parent->relid == current_child->parent->relid)
+		{
+			// must create a new node for this pair
+			merge_children = list_make2(previous_child, current_child);
+			MergeAppendPath *append = create_merge_append_path_compat(root,
+														 rel,
+														 merge_children,
+														 path->cpath.path.pathkeys,
+														 PATH_REQ_OUTER(subpath),
+														 NIL);
+			new_children = lappend(new_children, append);
+		}
+	}
+	// else if (list_length(children) >= 3)
+	// {
+	// 	ListCell *flat = list_head(children);
+	// 	ListCell *compat_lc = NULL;
+	// 	ListCell *current_lc = list_head(children), *previous_lc;
+	// 	List *nested_children = NIL;
+	// 	new_children = list_copy(children); // I'll delete from this and append to it for each pair of nodes I combine into a mergeAppend
+	// 	List *merge_children = NIL;
+	// 	Path *previous_child = linitial(children), *current_child = lsecond(children);
+	// 	bool should_drop_previous = false;
+
+
+	// 	if (previous_child->parent->relid == current_child->parent->relid)
+	// 	{
+	// 		// must create a new node for this pair
+	// 		merge_children = list_make2(previous_child, current_child);
+	// 		MergeAppendPath *append = create_merge_append_path_compat(root,
+	// 													 rel,
+	// 													 merge_children,
+	// 													 path->cpath.path.pathkeys,
+	// 													 PATH_REQ_OUTER(subpath),
+	// 													 NIL);
+	// 		list_delete(new_children, previous_child);
+	// 		list_delete(new_children, current_child);
+	// 		// should_drop_previous = true;
+	// 		lappend(new_children, append);
+	// 	}
+
+	// 	for_each_cell_compat(lc, children, lthird(children))
+	// 	{
+	// 		/* we assume that children that refer to the same chunk (compressed and uncompressed parts) 
+	// 		will appear consecutively one after the other */
+	// 		current_child = (Path *) lfirst(lc);
+
+	// 		if (previous_child->parent->relid == current_child->parent->relid)
+	// 		{
+	// 			// must create a new node for this pair
+	// 			merge_children = list_make2(previous_child, current_child);
+	// 			MergeAppendPath *append = create_merge_append_path_compat(root,
+	// 														rel,
+	// 														merge_children,
+	// 														path->cpath.path.pathkeys,
+	// 														PATH_REQ_OUTER(subpath),
+	// 														NIL);
+	// 			lappend(new_children, append);
+	// 			should_drop_previous = true;
+	// 		}
+	// 		previous_child = current_child;
+	// 	}
+		
+	// 	if (list_length(new_children > 0))
+	// 		path->cpath.custom_paths = new_children;
+	// }
+	
+
 	if (!ordered || ht->space->num_dimensions == 1)
-		path->cpath.custom_paths = children;
+		if (new_children == NIL)
+			path->cpath.custom_paths = children;
+		else
+			path->cpath.custom_paths = new_children;
 	else
 	{
 		/*
@@ -240,7 +320,7 @@ ts_chunk_append_path_create(PlannerInfo *root, RelOptInfo *rel, Hypertable *ht, 
 				Path *child = (Path *) lfirst(flat);
 				Oid parent_relid = child->parent->relid;
 				bool is_not_pruned =
-					lfirst_oid(lc_oid) == root->simple_rte_array[parent_relid]->relid;
+					lfirst_oid(lc_oid) == root->simple_rte_array[parent_relid]->relid; // relid check (this gives me the chunk)
 
 				if (is_not_pruned)
 				{
