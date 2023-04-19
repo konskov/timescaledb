@@ -568,7 +568,7 @@ ts_decompress_chunk_generate_paths(PlannerInfo *root, RelOptInfo *chunk_rel, Hyp
 												  chunk_rel,
 												  list_make2(path, uncompressed_path),
 												  NIL /* partial paths */,
-												  NIL /* pathkeys */,
+												  root->query_pathkeys /* pathkeys */,
 												  PATH_REQ_OUTER(uncompressed_path),
 												  0,
 												  false,

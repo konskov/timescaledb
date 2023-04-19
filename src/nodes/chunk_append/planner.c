@@ -61,6 +61,8 @@ _chunk_append_init(void)
 	TryRegisterCustomScanMethods(&chunk_append_plan_methods);
 }
 
+/* adjusts the targetlist and injects Sort node,
+if needed. Needed: when */
 static Plan *
 adjust_childscan(PlannerInfo *root, Plan *plan, Path *path, List *pathkeys, List *tlist,
 				 AttrNumber *sortColIdx)
@@ -88,11 +90,11 @@ adjust_childscan(PlannerInfo *root, Plan *plan, Path *path, List *pathkeys, List
 										 &nullsFirst);
 
 	/* inject sort node if child sort order does not match desired order */
-	if (!pathkeys_contained_in(pathkeys, path->pathkeys)) // this is the problem: path->pathkeys is empty
-	{
-		plan = (Plan *)
-			make_sort(plan, childSortCols, childColIdx, sortOperators, collations, nullsFirst);
-	}
+	// if (!pathkeys_contained_in(pathkeys, path->pathkeys)) // this is the problem: path->pathkeys is empty
+	// {
+	// 	plan = (Plan *)
+	// 		make_sort(plan, childSortCols, childColIdx, sortOperators, collations, nullsFirst);
+	// }
 	return plan;
 }
 
