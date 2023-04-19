@@ -217,6 +217,11 @@ ts_chunk_append_path_create(PlannerInfo *root, RelOptInfo *rel, Hypertable *ht, 
 			new_children = lappend(new_children, append);
 		}
 	}
+	if (list_length(children) >= 3)
+	{
+		Path *other = (Path *) lthird(children);
+		new_children = lappend(new_children, other);
+	}
 	// else if (list_length(children) >= 3)
 	// {
 	// 	ListCell *flat = list_head(children);

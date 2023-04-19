@@ -88,7 +88,7 @@ adjust_childscan(PlannerInfo *root, Plan *plan, Path *path, List *pathkeys, List
 										 &nullsFirst);
 
 	/* inject sort node if child sort order does not match desired order */
-	if (!pathkeys_contained_in(pathkeys, path->pathkeys))
+	if (!pathkeys_contained_in(pathkeys, path->pathkeys)) // this is the problem: path->pathkeys is empty
 	{
 		plan = (Plan *)
 			make_sort(plan, childSortCols, childColIdx, sortOperators, collations, nullsFirst);
@@ -210,7 +210,8 @@ ts_chunk_append_plan_create(PlannerInfo *root, RelOptInfo *rel, CustomPath *path
 				castNode(Result, lfirst(lc_plan))->resconstantqual == NULL)
 				lfirst(lc_plan) = ((Plan *) lfirst(lc_plan))->lefttree;
 
-			if (IsA(lfirst(lc_plan), MergeAppend))
+			if (IsA(lfirst(lc_plan), MergeAppend)) // we have made assumption here that the mergeAppend is only due to space partitioning, 
+			// this is not true anymore
 			{
 				ListCell *lc_childpath, *lc_childplan;
 				MergeAppend *merge_plan = castNode(MergeAppend, lfirst(lc_plan));
