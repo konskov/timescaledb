@@ -429,6 +429,7 @@ ts_decompress_chunk_generate_paths(PlannerInfo *root, RelOptInfo *chunk_rel, Hyp
 		parent_relids = find_childrel_parents(root, chunk_rel);
 
 	/* create non-parallel paths */
+	// compressed_rel->pathlist should contain a seqscan path and and indexscan path
 	foreach (lc, compressed_rel->pathlist)
 	{
 		Path *child_path = lfirst(lc);
@@ -553,12 +554,21 @@ ts_decompress_chunk_generate_paths(PlannerInfo *root, RelOptInfo *chunk_rel, Hyp
 		 * If this is a partially compressed chunk we have to combine data
 		 * from compressed and uncompressed chunk.
 		 */
+		// this is what I need to change
+		// here I don't have the top node (merge append)
 		if (ts_chunk_is_partial(chunk))
+			// path = (Path *) create_merge_append_path_compat(root,
+			// 												chunk_rel,
+			// 												list_make2(path, uncompressed_path),
+			// 												root->query_pathkeys /*pathkeys*/,
+			// 												PATH_REQ_OUTER(uncompressed_path),
+			// 												NIL);
+
 			path = (Path *) create_append_path_compat(root,
 													  chunk_rel,
 													  list_make2(path, uncompressed_path),
 													  NIL /* partial paths */,
-													  NIL /* pathkeys */,
+													  root->query_pathkeys /* pathkeys */,
 													  PATH_REQ_OUTER(uncompressed_path),
 													  0,
 													  false,
@@ -601,6 +611,12 @@ ts_decompress_chunk_generate_paths(PlannerInfo *root, RelOptInfo *chunk_rel, Hyp
 													   false,
 													   NIL,
 													   path->rows + uncompressed_path->rows);
+			// path = (Path *) create_merge_append_path_compat(root,
+			// 											chunk_rel,
+			// 											list_make2(path, uncompressed_path),
+			// 											root->query_pathkeys /*pathkeys*/,
+			// 											PATH_REQ_OUTER(uncompressed_path),
+			// 											NIL);
 			add_partial_path(chunk_rel, path);
 		}
 		/* the chunk_rel now owns the paths, remove them from the compressed_rel so they can't be

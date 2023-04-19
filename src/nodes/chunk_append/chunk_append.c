@@ -195,8 +195,138 @@ ts_chunk_append_path_create(PlannerInfo *root, RelOptInfo *rel, Hypertable *ht, 
 			break;
 	}
 
+	List *new_children = NIL;
+	// this is where we will convert the sort nodes from the children into a mergeAppend node
+	// we'll skip this if we don't have several children
+
+	if (list_length(children) == 2)
+	{
+		List *merge_children = NIL;
+		Path *previous_child = linitial(children), *current_child = lsecond(children);
+
+		/* these two children belong to the same chunk (compressed and uncompressed parts) */
+		if (previous_child->parent->relid == current_child->parent->relid)
+		{
+			// must create a new node for this pair
+			merge_children = list_make2(previous_child, current_child);
+			MergeAppendPath *append = create_merge_append_path_compat(root,
+																	  rel,
+																	  merge_children,
+																	  path->cpath.path.pathkeys,
+																	  PATH_REQ_OUTER(subpath),
+																	  NIL);
+			new_children = lappend(new_children, append);
+		}
+	}
+	else if (list_length(children) >= 3)
+	{
+		// int32 idx_prev = 0, idx_current = 1, idx_next = 2; // dclist has uint32 count
+		ListCell *next_lc;
+		List *merge_children = NIL;
+		Path *previous_child = linitial(children), *current_child = lsecond(children);
+		// Path *next_child = lthird(children);
+
+		next_lc = list_nth_cell(children, 2);
+
+		/*
+		 * 1. initialize current pair
+		 * 2. check if they match and add new node if they do
+		 * 3. get the next node
+		 */
+		if (previous_child->parent->relid == current_child->parent->relid)
+		{
+			// must create a new node for this pair
+			merge_children = list_make2(previous_child, current_child);
+			MergeAppendPath *append = create_merge_append_path_compat(root,
+																	  rel,
+																	  merge_children,
+																	  path->cpath.path.pathkeys,
+																	  PATH_REQ_OUTER(subpath),
+																	  NIL);
+			new_children = lappend(new_children, append);
+			previous_child = NULL;
+			current_child = NULL;
+		}
+
+		while (next_lc != NULL)
+		{
+			/* is there a current pair? if not, initialize it */
+			if (previous_child == NULL || current_child == NULL) // actually both will be NULL
+			{
+				previous_child = lfirst(next_lc); // next_child
+				// now get the current one
+				next_lc = lnext_compat(children, next_lc);
+				if (next_lc == NULL)
+				{
+					/* will append this single node outside the while loop */
+					break;
+				}
+				else
+					current_child = (Path *) lfirst(next_lc);
+			}
+
+			/* we have a pair to check, are they parts of the same chunk? */
+			if (previous_child->parent->relid == current_child->parent->relid)
+			{
+				// must create a new node for this pair
+				merge_children = list_make2(previous_child, current_child);
+				MergeAppendPath *append = create_merge_append_path_compat(root,
+																		  rel,
+																		  merge_children,
+																		  path->cpath.path.pathkeys,
+																		  PATH_REQ_OUTER(subpath),
+																		  NIL);
+				new_children = lappend(new_children, append);
+				previous_child = NULL;
+				current_child = NULL;
+				next_lc = lnext_compat(children, next_lc);
+			}
+			else
+			{
+				/* insert the single one and advance to the next pair of nodes */
+				new_children = lappend(new_children, previous_child);
+				previous_child = current_child;
+				current_child = lfirst(next_lc);
+				next_lc = lnext_compat(children, next_lc);
+			}
+		}
+		/* out of the while loop, we now either have a pair, or two unrelated nodes that need to
+		 be appended as they are */
+		if (previous_child != NULL && current_child != NULL)
+			if (previous_child->parent->relid == current_child->parent->relid)
+			{
+				// must create a new node for this pair
+				merge_children = list_make2(previous_child, current_child);
+				MergeAppendPath *append = create_merge_append_path_compat(root,
+																		  rel,
+																		  merge_children,
+																		  path->cpath.path.pathkeys,
+																		  PATH_REQ_OUTER(subpath),
+																		  NIL);
+				new_children = lappend(new_children, append);
+				previous_child = NULL;
+				current_child = NULL;
+			}
+			else
+			{
+				/* just add both nodes as they are unrelated */
+				new_children = lappend(new_children, previous_child);
+				new_children = lappend(new_children, current_child);
+			}
+		else if (previous_child != NULL)
+			new_children = lappend(new_children, previous_child);
+		else if (current_child != NULL)
+			new_children = lappend(new_children, current_child);
+	}
+
+	if (list_length(new_children) > 0)
+		path->cpath.custom_paths = new_children;
+
 	if (!ordered || ht->space->num_dimensions == 1)
-		path->cpath.custom_paths = children;
+		if (new_children == NIL)
+			path->cpath.custom_paths = children;
+		else
+			path->cpath.custom_paths = new_children;
 	else
 	{
 		/*
@@ -253,6 +383,7 @@ ts_chunk_append_path_create(PlannerInfo *root, RelOptInfo *rel, Hypertable *ht, 
 
 			if (list_length(merge_childs) > 1)
 			{
+				// this is what returns the mergeAppend node
 				append = create_merge_append_path_compat(root,
 														 rel,
 														 merge_childs,

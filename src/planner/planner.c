@@ -855,6 +855,8 @@ should_chunk_append(Hypertable *ht, PlannerInfo *root, RelOptInfo *rel, Path *pa
 		!ts_guc_enable_chunk_append || hypertable_is_distributed(ht))
 		return false;
 
+	bool retval = true;
+
 	switch (nodeTag(path))
 	{
 		case T_AppendPath:
@@ -925,6 +927,8 @@ should_chunk_append(Hypertable *ht, PlannerInfo *root, RelOptInfo *rel, Path *pa
 				 * ordered append. We instead need nested Appends to correctly preserve
 				 * ordering. For now we skip ordered append optimization when we encounter
 				 * partial chunks.
+				 * Now we do not skip it, we move the check for partial chunks to the place
+				 * where we do the chunk append for space partitioned hypertables.
 				 */
 				foreach (lc, merge->subpaths)
 				{
@@ -933,10 +937,22 @@ should_chunk_append(Hypertable *ht, PlannerInfo *root, RelOptInfo *rel, Path *pa
 					if (chunk_rel->fdw_private)
 					{
 						TimescaleDBPrivate *private = chunk_rel->fdw_private;
+						/* for all partially compressed chunks in the plan, */
 						if (private->chunk && ts_chunk_is_partial(private->chunk))
-							return false;
+						{
+							// MergeAppendPath
+							retval = true;
+						}
+						// add_path for this partial chunk
+						// this new path should contain alternatives to enable mergeAppend (merging
+						// the output of compressed and uncompressed parts) new function will inject
+						// a mergeAppend node here (as is done in chunk_append_path_create for space
+						// partitioning) Path *chunk_children = child->
 					}
 				}
+
+				if (!retval)
+					return false;
 
 				pk = linitial_node(PathKey, path->pathkeys);
 
