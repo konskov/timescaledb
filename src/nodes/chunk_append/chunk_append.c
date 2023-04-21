@@ -196,6 +196,80 @@ ts_chunk_append_path_create(PlannerInfo *root, RelOptInfo *rel, Hypertable *ht, 
 	}
 
 	if (!ordered || ht->space->num_dimensions == 1)
+	{
+		List *nested_children = NIL;
+		/*
+		 * Convert the sort nodes that refer to the same chunk into a single
+		 * mergeAppend node to combine compressed and uncompressed chunk output.
+		 *
+		 * NB: We assume that the sort nodes referring the same chunk appear
+		 * one after the other and so we iterate through the children examining
+		 * consecutive pairs. Is it possible that this assumption is wrong?
+		 */
+		List *group = NIL;
+		Oid relid = InvalidOid;
+
+		foreach (lc, children)
+		{
+			Path *child = (Path *) lfirst(lc);
+			/* Check if this is in new group */
+			if (child->parent->relid != relid)
+			{
+				/* if previous group had members, process them */
+				if (group)
+				{
+					if (list_length(group) > 1)
+					{
+						MergeAppendPath *append =
+							create_merge_append_path_compat(root,
+															rel,
+															group,
+															path->cpath.path.pathkeys,
+															PATH_REQ_OUTER(subpath),
+															NIL);
+						nested_children = lappend(nested_children, append);
+					}
+					else
+					{
+						/* If group only has 1 member we can add it directly */
+						nested_children = lappend(nested_children, linitial(group));
+					}
+					group = NIL;
+				}
+				relid = child->parent->relid;
+			}
+
+			/* Form the new group */
+			group = lappend(group, child);
+		}
+
+		if (group)
+		{
+			if (list_length(group) > 1)
+			{
+				MergeAppendPath *append = create_merge_append_path_compat(root,
+																		  rel,
+																		  group,
+																		  path->cpath.path.pathkeys,
+																		  PATH_REQ_OUTER(subpath),
+																		  NIL);
+				nested_children = lappend(nested_children, append);
+			}
+			else
+			{
+				/* If group only has 1 member we add it directly */
+				nested_children = lappend(nested_children, linitial(group));
+			}
+		}
+
+		if (list_length(nested_children) > 0)
+		{
+			path->cpath.custom_paths = nested_children;
+			children = nested_children;
+		}
+	}
+
+	if (!ordered || ht->space->num_dimensions == 1)
 		path->cpath.custom_paths = children;
 	else
 	{

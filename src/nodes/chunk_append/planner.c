@@ -29,7 +29,7 @@
 static Sort *make_sort(Plan *lefttree, int numCols, AttrNumber *sortColIdx, Oid *sortOperators,
 					   Oid *collations, bool *nullsFirst);
 static Plan *adjust_childscan(PlannerInfo *root, Plan *plan, Path *path, List *pathkeys,
-							  List *tlist, AttrNumber *sortColIdx);
+							  List *tlist, AttrNumber *sortColIdx, bool partial_chunks);
 
 static CustomScanMethods chunk_append_plan_methods = {
 	.CustomName = "ChunkAppend",
@@ -63,7 +63,7 @@ _chunk_append_init(void)
 
 static Plan *
 adjust_childscan(PlannerInfo *root, Plan *plan, Path *path, List *pathkeys, List *tlist,
-				 AttrNumber *sortColIdx)
+				 AttrNumber *sortColIdx, bool partial_chunks)
 {
 	AppendRelInfo *appinfo = ts_get_appendrelinfo(root, path->parent->relid, false);
 	int childSortCols;
@@ -88,7 +88,7 @@ adjust_childscan(PlannerInfo *root, Plan *plan, Path *path, List *pathkeys, List
 										 &nullsFirst);
 
 	/* inject sort node if child sort order does not match desired order */
-	if (!pathkeys_contained_in(pathkeys, path->pathkeys))
+	if (!pathkeys_contained_in(pathkeys, path->pathkeys) && !partial_chunks)
 	{
 		plan = (Plan *)
 			make_sort(plan, childSortCols, childColIdx, sortOperators, collations, nullsFirst);
@@ -210,6 +210,9 @@ ts_chunk_append_plan_create(PlannerInfo *root, RelOptInfo *rel, CustomPath *path
 				castNode(Result, lfirst(lc_plan))->resconstantqual == NULL)
 				lfirst(lc_plan) = ((Plan *) lfirst(lc_plan))->lefttree;
 
+			/* this could be a mergeAppend due to space partitioning, or
+			 due to partially compressed chunks. In the second case, there is
+			 no need to inject sort nodes */
 			if (IsA(lfirst(lc_plan), MergeAppend))
 			{
 				ListCell *lc_childpath, *lc_childplan;
@@ -226,6 +229,16 @@ ts_chunk_append_plan_create(PlannerInfo *root, RelOptInfo *rel, CustomPath *path
 				merge_plan->sortOperators = sortOperators;
 				merge_plan->collations = collations;
 				merge_plan->nullsFirst = nullsFirst;
+				bool partial_chunks = false;
+
+				/* to determine if we have partial chunks */
+				if (list_length(merge_path->subpaths) == 2)
+				{
+					Path *child1 = (Path *) linitial(merge_path->subpaths);
+					Path *child2 = (Path *) lsecond(merge_path->subpaths);
+					if (child1->parent->relid == child2->parent->relid)
+						partial_chunks = true;
+				}
 
 				forboth (lc_childpath, merge_path->subpaths, lc_childplan, merge_plan->mergeplans)
 				{
@@ -234,7 +247,8 @@ ts_chunk_append_plan_create(PlannerInfo *root, RelOptInfo *rel, CustomPath *path
 															lfirst(lc_childpath),
 															pathkeys,
 															tlist,
-															sortColIdx);
+															sortColIdx,
+															partial_chunks);
 				}
 			}
 			else
@@ -244,7 +258,8 @@ ts_chunk_append_plan_create(PlannerInfo *root, RelOptInfo *rel, CustomPath *path
 												   lfirst(lc_path),
 												   path->path.pathkeys,
 												   tlist,
-												   sortColIdx);
+												   sortColIdx,
+												   false);
 			}
 		}
 	}
