@@ -904,3 +904,56 @@ select compress_chunk(c) from show_chunks('test_partials', newer_than => '2022-0
 explain (costs off) select * from test_partials order by time;
 -- verify result correctness
 select * from test_partials order by time;
+
+-- add test for space partioning with partial chunks
+create table space_part (time timestamptz, a int, b int, c int);
+select create_hypertable('space_part', 'time', chunk_time_interval => interval '1 day');
+
+insert into space_part values
+-- chunk1
+('2020-01-01 00:00', 1, 1, 1),
+('2020-01-01 00:00', 2, 1, 1),
+('2020-01-01 00:03', 1, 1, 1),
+('2020-01-01 00:03', 2, 1, 1);
+insert into space_part values
+-- chunk2
+('2021-01-01 00:00', 1, 1, 1),
+('2021-01-01 00:00', 2, 1, 1),
+('2021-01-01 00:03', 1, 1, 1),
+('2021-01-01 00:03', 2, 1, 1);
+-- compress them
+alter table space_part set (timescaledb.compress);
+select compress_chunk(show_chunks('space_part'));
+-- make first chunk partial
+insert into space_part values
+-- chunk1
+('2020-01-01 00:01', 1, 1, 1),
+('2020-01-01 00:01', 2, 1, 1);
+
+-------- now enable the space partitioning, this will take effect for chunks created subsequently
+select add_dimension('space_part', 'a', number_partitions => 5);
+-- plan is still the same
+explain (costs off) select * from space_part order by time;
+
+-- now add more chunks that do adhere to the new space partitioning
+-- chunks 3,4
+insert into space_part values
+('2022-01-01 00:00', 1, 1, 1),
+('2022-01-01 00:00', 2, 1, 1),
+('2022-01-01 00:03', 1, 1, 1),
+('2022-01-01 00:03', 2, 1, 1);
+-- plan still ok
+explain (costs off) select * from space_part order by time;
+-- compress them
+select compress_chunk(c, if_not_compressed=>true) from show_chunks('space_part') c;
+-- plan still ok
+explain (costs off) select * from space_part order by time;
+-- make second one of them partial
+insert into space_part values
+('2022-01-01 00:02', 2, 1, 1),
+('2022-01-01 00:02', 2, 1, 1);
+explain (costs off) select * from space_part order by time;
+-- make other one partial too
+insert into space_part values
+('2022-01-01 00:02', 1, 1, 1);
+explain (costs off) select * from space_part order by time;

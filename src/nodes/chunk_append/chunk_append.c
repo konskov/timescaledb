@@ -308,21 +308,28 @@ ts_chunk_append_path_create(PlannerInfo *root, RelOptInfo *rel, Hypertable *ht, 
 			if (flat == NULL)
 				break;
 
+			/* for each lc_oid, there will be 0, 1, or 2 matches in the flat list 
+			 if there are 2 matches they will also be consecutive (see assumption above) */
 			foreach (lc_oid, current_oids)
 			{
-				/* postgres may have pruned away some children already */
-				Path *child = (Path *) lfirst(flat);
-				Oid parent_relid = child->parent->relid;
-				bool is_not_pruned =
-					lfirst_oid(lc_oid) == root->simple_rte_array[parent_relid]->relid;
-
-				if (is_not_pruned)
+				bool possible_pair = true;
+				do
 				{
-					merge_childs = lappend(merge_childs, child);
-					flat = lnext_compat(children, flat);
-					if (flat == NULL)
-						break;
-				}
+					Path *child = (Path *) lfirst(flat);
+					Oid parent_relid = child->parent->relid;
+					bool is_not_pruned =
+						lfirst_oid(lc_oid) == root->simple_rte_array[parent_relid]->relid;
+					possible_pair = is_not_pruned;
+					/* postgres may have pruned away some children already */
+					if (is_not_pruned)
+					{
+						merge_childs = lappend(merge_childs, child);
+						flat = lnext_compat(children, flat);
+						if (flat == NULL)
+							break;
+						// if current one matched then I need to check the next one for match too with this cell
+					}
+				} while(possible_pair);				
 			}
 
 			if (list_length(merge_childs) > 1)

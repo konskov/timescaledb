@@ -928,19 +928,19 @@ should_chunk_append(Hypertable *ht, PlannerInfo *root, RelOptInfo *rel, Path *pa
 				 * Now we do not skip it, we move the check for partial chunks to the place
 				 * where we do the chunk append for space partitioned hypertables.
 				 */
-				foreach (lc, merge->subpaths)
-				{
-					Path *child = lfirst(lc);
-					RelOptInfo *chunk_rel = child->parent;
-					if (chunk_rel->fdw_private)
-					{
-						TimescaleDBPrivate *private = chunk_rel->fdw_private;
-						/* for all partially compressed chunks in the plan, */
-						if (private->chunk && ts_chunk_is_partial(private->chunk) &&
-							ht->space->num_dimensions > 1)
-							return false;
-					}
-				}
+				// foreach (lc, merge->subpaths)
+				// {
+				// 	Path *child = lfirst(lc);
+				// 	RelOptInfo *chunk_rel = child->parent;
+				// 	if (chunk_rel->fdw_private)
+				// 	{
+				// 		TimescaleDBPrivate *private = chunk_rel->fdw_private;
+				// 		/* for all partially compressed chunks in the plan, */
+				// 		if (private->chunk && ts_chunk_is_partial(private->chunk) &&
+				// 			ht->space->num_dimensions > 1)
+				// 			return false;
+				// 	}
+				// }
 
 				pk = linitial_node(PathKey, path->pathkeys);
 
