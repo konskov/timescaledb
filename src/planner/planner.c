@@ -926,17 +926,17 @@ should_chunk_append(Hypertable *ht, PlannerInfo *root, RelOptInfo *rel, Path *pa
 				 * ordering. For now we skip ordered append optimization when we encounter
 				 * partial chunks.
 				 */
-				foreach (lc, merge->subpaths)
-				{
-					Path *child = lfirst(lc);
-					RelOptInfo *chunk_rel = child->parent;
-					if (chunk_rel->fdw_private)
-					{
-						TimescaleDBPrivate *private = chunk_rel->fdw_private;
-						if (private->chunk && ts_chunk_is_partial(private->chunk))
-							return false;
-					}
-				}
+				// foreach (lc, merge->subpaths)
+				// {
+				// 	Path *child = lfirst(lc);
+				// 	RelOptInfo *chunk_rel = child->parent;
+				// 	if (chunk_rel->fdw_private)
+				// 	{
+				// 		TimescaleDBPrivate *private = chunk_rel->fdw_private;
+				// 		if (private->chunk && ts_chunk_is_partial(private->chunk))
+				// 			return false;
+				// 	}
+				// }
 
 				pk = linitial_node(PathKey, path->pathkeys);
 

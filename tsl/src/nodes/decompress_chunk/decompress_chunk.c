@@ -571,9 +571,19 @@ ts_decompress_chunk_generate_paths(PlannerInfo *root, RelOptInfo *chunk_rel, Hyp
 					continue;
 			}
 
+			path = (Path *) create_merge_append_path_compat(root,
+															chunk_rel,
+															list_make2(path, uncompressed_path),
+															root->query_pathkeys,
+															req_outer,
+															NIL);
+			// path->startup_cost = 0;
+			// path->total_cost = path->startup_cost;
+			// add_path(chunk_rel, path);
+
 			path = (Path *) create_append_path_compat(root,
 													  chunk_rel,
-													  list_make2(path, uncompressed_path),
+													  list_make1(path),
 													  NIL /* partial paths */,
 													  NIL /* pathkeys */,
 													  req_outer,
