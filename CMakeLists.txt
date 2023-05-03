@@ -205,6 +205,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|AppleClang|Clang")
     # The SQL function arguments macro PG_FUNCTION_ARGS often inroduces unused
     # arguments.
     -Wno-unused-parameter
+    -Wno-unused-variable
     -Wundef
     -Wmissing-prototypes
     -Wpointer-arith

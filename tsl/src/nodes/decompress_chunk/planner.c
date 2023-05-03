@@ -365,6 +365,7 @@ find_attr_pos_in_tlist(List *targetlist, AttrNumber pos)
 	pg_unreachable();
 }
 
+// I suspect this is problematic
 Plan *
 decompress_chunk_plan_create(PlannerInfo *root, RelOptInfo *rel, CustomPath *path,
 							 List *decompressed_tlist, List *clauses, List *custom_plans)
@@ -387,7 +388,8 @@ decompress_chunk_plan_create(PlannerInfo *root, RelOptInfo *rel, CustomPath *pat
 	decompress_plan->scan.plan.targetlist = decompressed_tlist;
 	/* input target list */
 	decompress_plan->custom_scan_tlist = NIL;
-
+	// I had thought the issue might be here, but I don't think it is, because the indexqual length is 3
+	// check in both cases how many index clauses are there
 	if (IsA(compressed_path, IndexPath))
 	{
 		/* from create_indexscan_plan() */
