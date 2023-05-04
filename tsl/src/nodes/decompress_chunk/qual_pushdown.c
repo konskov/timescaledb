@@ -33,6 +33,7 @@ typedef struct QualPushdownContext
 
 static Node *modify_expression(Node *node, QualPushdownContext *context);
 
+/* this is teh function that fills in the baserestrictinfo */
 void
 pushdown_quals(PlannerInfo *root, RelOptInfo *chunk_rel, RelOptInfo *compressed_rel,
 			   List *compression_info, bool chunk_partial)

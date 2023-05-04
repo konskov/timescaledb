@@ -1447,6 +1447,8 @@ decompress_chunk_add_plannerinfo(PlannerInfo *root, CompressionInfo *info, Chunk
 	 */
 	Assert(info->single_chunk || chunk_rel->top_parent_relids != NULL);
 	compressed_rel->top_parent_relids = bms_copy(chunk_rel->top_parent_relids);
+	// at this point I need to examine the chunk_rel and compressed_rel joininfo, baserestrictinfo
+	// and 
 
 	root->simple_rel_array[compressed_index] = compressed_rel;
 	info->compressed_rel = compressed_rel;
@@ -1562,7 +1564,7 @@ create_compressed_scan_paths(PlannerInfo *root, RelOptInfo *compressed_rel, int 
 	{
 		check_index_predicates(root, compressed_rel);
 		create_index_paths(root, compressed_rel);
-	}
+	} // these index paths seem to be created with just one index clause: command : p *(*(IndexPath *)compressed_rel->pathlist->elements[0].ptr_value).indexclauses
 
 	enable_bitmapscan = old_bitmapscan;
 }
