@@ -616,6 +616,7 @@ ts_decompress_chunk_generate_paths(PlannerInfo *root, RelOptInfo *chunk_rel, Hyp
 	}
 
 	chunk_rel->rows = new_row_estimate;
+	// Assert(compressed_rel->joininfo == NULL);
 	create_compressed_scan_paths(root,
 								 compressed_rel,
 								 compressed_rel->consider_parallel ? parallel_workers : 0,
@@ -1275,6 +1276,63 @@ create_var_for_compressed_equivalence_member(Var *var, const EMCreationContext *
 	return NULL;
 }
 
+// static Node *modify_expression(Node *node, QualPushdownContext *context);
+
+
+// static Node *
+// modify_expression(Node *node, QualPushdownContext *context)
+// {
+// 	if (node == NULL)
+// 		return NULL;
+
+// 	switch (nodeTag(node))
+// 	{
+// 		case T_CoerceViaIO:
+// 		case T_RelabelType:
+// 		case T_ScalarArrayOpExpr:
+// 		case T_List:
+// 		case T_Const:
+// 		case T_NullTest:
+// 		case T_Param:
+// 			break;
+// 		case T_Var:
+// 		{
+// 			Var *var = castNode(Var, node);
+// 			FormData_hypertable_compression *compressioninfo =
+// 				get_compression_info_from_var(context, var);
+// 			AttrNumber compressed_attno;
+
+// 			if (compressioninfo == NULL)
+// 			{
+// 				context->can_pushdown = false;
+// 				return NULL;
+// 			}
+
+// 			/* we can only push down quals for segmentby columns */
+// 			if (compressioninfo->segmentby_column_index <= 0)
+// 			{
+// 				context->can_pushdown = false;
+// 				return NULL;
+// 			}
+
+// 			var = copyObject(var);
+// 			compressed_attno =
+// 				get_attnum(context->compressed_rte->relid, compressioninfo->attname.data);
+// 			var->varno = context->compressed_rel->relid;
+// 			var->varattno = compressed_attno;
+
+// 			return (Node *) var;
+// 		}
+// 		default:
+// 			context->can_pushdown = false;
+// 			return NULL;
+// 			break;
+// 	}
+
+// 	return expression_tree_mutator(node, modify_expression, context);
+// }
+
+
 static bool
 add_segmentby_to_equivalence_class(EquivalenceClass *cur_ec, CompressionInfo *info,
 								   EMCreationContext *context)
@@ -1288,13 +1346,26 @@ add_segmentby_to_equivalence_class(EquivalenceClass *cur_ec, CompressionInfo *in
 		Relids new_nullable_relids;
 		EquivalenceMember *cur_em = (EquivalenceMember *) lfirst(lc);
 		Var *var;
+		Expr *expr;
 		Assert(!bms_overlap(cur_em->em_relids, info->compressed_rel->relids));
 
 		/* only consider EquivalenceMembers that are vars of the uncompressed chunk */
-		if (!IsA(cur_em->em_expr, Var))
+		if (!IsA(cur_em->em_expr, Var) && !IsA(cur_em->em_expr, RelabelType))
 			continue;
 
-		var = castNode(Var, cur_em->em_expr);
+		
+		if (IsA(cur_em->em_expr, Var))
+		{
+			var = castNode(Var, cur_em->em_expr);
+			expr = cur_em->em_expr;
+		}
+		else if (IsA(cur_em->em_expr, RelabelType))
+		{
+			expr = ((RelabelType *)cur_em->em_expr)->arg;
+			var = castNode(Var, expr);
+			// var = castNode(Var, ((RelabelType *)cur_em->em_expr)->arg);
+		}
+			// var = modify_expression((Node *) )
 
 		if ((Index) var->varno != info->chunk_rel->relid)
 			continue;
@@ -1303,7 +1374,7 @@ add_segmentby_to_equivalence_class(EquivalenceClass *cur_ec, CompressionInfo *in
 		 * be set on the em */
 		Assert(bms_overlap(cur_em->em_relids, uncompressed_chunk_relids));
 
-		context->current_col_info = get_compression_info_for_em((Node *) cur_em->em_expr, context);
+		context->current_col_info = get_compression_info_for_em((Node *) expr, context);
 		if (context->current_col_info == NULL)
 			continue;
 
@@ -1356,6 +1427,7 @@ add_segmentby_to_equivalence_class(EquivalenceClass *cur_ec, CompressionInfo *in
 	return false;
 }
 
+// root contains the equivalence classes here, did postgres set them up and miss one?
 static void
 compressed_rel_setup_equivalence_classes(PlannerInfo *root, CompressionInfo *info)
 {
@@ -1379,6 +1451,7 @@ compressed_rel_setup_equivalence_classes(PlannerInfo *root, CompressionInfo *inf
 	/* use chunk rel's eclass_indexes to avoid traversing all
 	 * the root's eq_classes
 	 */
+	// I see there were only two of those for the query in question, where did they get generated?
 	while ((i = bms_next_member(info->chunk_rel->eclass_indexes, i)) >= 0)
 	{
 		EquivalenceClass *cur_ec = (EquivalenceClass *) list_nth(root->eq_classes, i);
