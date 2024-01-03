@@ -249,17 +249,11 @@ ts_constify_now(PlannerInfo *root, List *rtable, Node *node)
 
 			foreach (lc, be->args)
 			{
-				if (IsA(lfirst(lc), OpExpr) && is_valid_now_expr(lfirst_node(OpExpr, lc), rtable))
-				{
-					OpExpr *op = lfirst_node(OpExpr, lc);
-					additions = lappend(additions, constify_now_expr(root, op));
-				}
+				additions = lappend(additions, ts_constify_now(root, rtable, (Node *) lfirst(lc)));
 			}
 
 			if (additions)
-			{
-				be->args = list_concat(be->args, additions);
-			}
+				be->args = additions;
 
 			break;
 		}
