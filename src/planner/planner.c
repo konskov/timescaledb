@@ -310,6 +310,12 @@ preprocess_query(Node *node, PreprocessQueryContext *context)
 			{
 				from->quals =
 					ts_constify_now(context->root, context->current_query->rtable, from->quals);
+#ifdef TS_DEBUG
+				Oid funcid_mock;
+				const char *funcname = "_timescaledb_functions.ts_maybe_replace_now_mock()";
+				funcid_mock = DatumGetObjectId(DirectFunctionCall1(regprocedurein, CStringGetDatum(funcname)));
+				replace_now_mock_walker(context->root, from->quals, funcid_mock);
+#endif
 			}
 			/*
 			 * We only amend space constraints for UPDATE/DELETE and SELECT FOR UPDATE

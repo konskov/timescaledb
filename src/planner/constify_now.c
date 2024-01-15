@@ -10,12 +10,14 @@
 #include <nodes/makefuncs.h>
 #include <optimizer/optimizer.h>
 #include <utils/fmgroids.h>
+#include <utils/fmgrprotos.h> // for regprocedurein
 
 #include "cache.h"
 #include "dimension.h"
 #include "hypertable.h"
 #include "hypertable_cache.h"
 #include "planner.h"
+#include "time_utils.h"
 
 /*
  * This implements an optimization to allow now() expression to be
@@ -44,7 +46,7 @@ get_hypertable_dimension(Oid relid, int flags)
 	return hyperspace_get_open_dimension(ht->space, 0);
 }
 
-static bool
+bool
 is_valid_now_func(Node *node)
 {
 	if (IsA(node, FuncExpr) && castNode(FuncExpr, node)->funcid == F_NOW)
@@ -147,7 +149,8 @@ make_now_const()
 					 FLOAT8PASSBYVAL);
 }
 
-/* returns a copy of the expression with the now() call constified */
+/* returns a copy of the expression with the now() call constified 
+ and also, replaced by the call to ts_get_mock_time_or_current_time */
 /*
  * op will be OpExpr with Var > now() - Expr
  */
@@ -232,8 +235,15 @@ ts_constify_now(PlannerInfo *root, List *rtable, Node *node)
 		case T_OpExpr:
 			if (is_valid_now_expr(castNode(OpExpr, node), rtable))
 			{
-				List *args =
-					list_make2(copyObject(node), constify_now_expr(root, castNode(OpExpr, node)));
+				// make me a new node to replace now() with our mock or now
+				Oid funcid_mock = InvalidOid;
+				// catlist = SearchSysCacheList1(PROCNAMEARGSNSP, CStringGetDatum(funcname));
+				const char *funcname = "_timescaledb_functions.ts_maybe_replace_now_mock()";
+				funcid_mock = DatumGetObjectId(DirectFunctionCall1(regprocedurein, CStringGetDatum(funcname)));
+				// elog(NOTICE, "funcid mock is %d", funcid_mock);
+				FuncExpr *fe_now_mock_or_real = makeFuncExpr(funcid_mock, TIMESTAMPTZOID, NIL, InvalidOid, InvalidOid, COERCE_EXPLICIT_CALL);
+				List *args = list_make2(fe_now_mock_or_real, constify_now_expr(root, castNode(OpExpr, node)));
+				// List *args = list_make2(copyObject(node), constify_now_expr(root, castNode(OpExpr, node)));
 				return (Node *) makeBoolExpr(AND_EXPR, args, -1);
 			}
 			break;

@@ -32,6 +32,7 @@
 #include "nodes/chunk_append/transform.h"
 #include "guc.h"
 #include "utils.h"
+#include "time_utils.h"
 
 /*
  * Exclude child relations (chunks) at execution time based on constraints.
@@ -82,6 +83,47 @@ can_exclude_chunk(PlannerInfo *root, EState *estate, Index rt_index, List *restr
 		   excluded_by_constraint(root, rte, rt_index, restrictinfos);
 }
 
+void
+replace_now_mock_walker(PlannerInfo *root, Node *clause, Oid funcid)
+{
+	// whenever we encounter a FuncExpr with now(), replace it with the supplied funcid
+	switch(nodeTag(clause))
+	{
+		case T_FuncExpr:
+			{
+				if (is_valid_now_func(clause))
+				{
+					FuncExpr *fe = castNode(FuncExpr, clause);
+					fe->funcid = funcid;
+					return;
+				}
+				break; // keep compiler happy
+			}
+		case T_OpExpr:
+			{
+				ListCell *lc;
+				OpExpr *oe = castNode(OpExpr, clause);
+				foreach(lc, oe->args)
+				{
+					replace_now_mock_walker(root, (Node *)lfirst(lc), funcid);
+				}
+				break;
+			}
+		case T_BoolExpr:
+			{
+				ListCell *lc;
+				BoolExpr *be = castNode(BoolExpr, clause);
+				foreach(lc, be->args)
+				{
+					replace_now_mock_walker(root, (Node *)lfirst(lc), funcid);
+				}
+				break;
+			}
+		default:
+			return;
+	}
+}
+
 /*
  * Convert restriction clauses to constants expressions (i.e., if there are
  * mutable functions, they need to be evaluated to constants).  For instance,
@@ -101,7 +143,14 @@ constify_restrictinfos(PlannerInfo *root, List *restrictinfos)
 	foreach (lc, restrictinfos)
 	{
 		RestrictInfo *rinfo = lfirst(lc);
-
+#ifdef TS_DEBUG
+		// replace calls to now() with calls to our function
+		Oid funcid_mock = InvalidOid;
+		// catlist = SearchSysCacheList1(PROCNAMEARGSNSP, CStringGetDatum(funcname));
+		const char *funcname = "_timescaledb_functions.ts_maybe_replace_now_mock()";
+		funcid_mock = DatumGetObjectId(DirectFunctionCall1(regprocedurein, CStringGetDatum(funcname)));
+		replace_now_mock_walker(root, (Node *) rinfo->clause, funcid_mock);
+#endif
 		rinfo->clause = (Expr *) estimate_expression_value(root, (Node *) rinfo->clause);
 	}
 

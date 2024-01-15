@@ -219,7 +219,7 @@ SET timescaledb.current_timestamp_mock TO '2024-01-01 0:30:00+00';
 SET timescaledb.enable_chunk_append TO true;
 SET timescaledb.enable_constraint_aware_append TO true;
 
--- no startup exclusion should be happening for any of the queries below
+-- for all the queries below, exclusion should be happening at plantime
 EXPLAIN (ANALYZE, SUMMARY OFF, TIMING OFF) SELECT * FROM logged_data WHERE
 timestamp BETWEEN now() AND now() - interval '1 day'
 AND rawtag_id = 1 ORDER BY "timestamp" ASC;
@@ -231,5 +231,19 @@ AND rawtag_id = 1 ORDER BY "timestamp" ASC;
 EXPLAIN (ANALYZE, SUMMARY OFF, TIMING OFF) SELECT * FROM logged_data WHERE
 timestamp <= now() AND timestamp >= now() - interval '1 day'
 ORDER BY "timestamp" ASC;
+
+-- mock_now() in the middle of the table
+SET timescaledb.current_timestamp_mock TO '2023-01-11';
+PREPARE pbtw AS SELECT * FROM logged_data WHERE
+timestamp BETWEEN now() - interval '5 day' AND now() AND rawtag_id = 1
+ORDER BY "timestamp" ASC;
+
+EXPLAIN (SUMMARY OFF, TIMING OFF) EXECUTE pbtw;
+EXECUTE pbtw;
+-- now move mock_now() to the future
+SET timescaledb.current_timestamp_mock TO '2024-01-01 0:30:00+00';
+EXPLAIN (SUMMARY OFF, TIMING OFF) EXECUTE pbtw;
+EXECUTE pbtw;
+DEALLOCATE pbtw;
 
 DROP TABLE logged_data;

@@ -250,6 +250,7 @@ do_startup_exclusion(ChunkAppendState *state)
 			{
 				RestrictInfo *ri = makeNode(RestrictInfo);
 				ri->clause = lfirst(lc);
+				// if there is now() in restrictinfos, replace it with our mock timestamp
 				restrictinfos = lappend(restrictinfos, ri);
 			}
 			restrictinfos = constify_restrictinfos(&root, restrictinfos);
@@ -930,7 +931,14 @@ constify_restrictinfos(PlannerInfo *root, List *restrictinfos)
 	foreach (lc, restrictinfos)
 	{
 		RestrictInfo *rinfo = lfirst(lc);
-
+#ifdef TS_DEBUG
+		// replace calls to now() with calls to our function
+		Oid funcid_mock = InvalidOid;
+		// catlist = SearchSysCacheList1(PROCNAMEARGSNSP, CStringGetDatum(funcname));
+		const char *funcname = "_timescaledb_functions.ts_maybe_replace_now_mock()";
+		funcid_mock = DatumGetObjectId(DirectFunctionCall1(regprocedurein, CStringGetDatum(funcname)));
+		replace_now_mock_walker(root, (Node *) rinfo->clause, funcid_mock);
+#endif
 		rinfo->clause = (Expr *) estimate_expression_value(root, (Node *) rinfo->clause);
 	}
 

@@ -46,3 +46,6 @@ RETURNS INT8 AS '@MODULE_PATHNAME@', 'ts_continuous_agg_watermark_materialized' 
 
 CREATE OR REPLACE FUNCTION _timescaledb_functions.subtract_integer_from_now( hypertable_relid REGCLASS, lag INT8 )
 RETURNS INT8 AS '@MODULE_PATHNAME@', 'ts_subtract_integer_from_now' LANGUAGE C STABLE STRICT;
+
+CREATE OR REPLACE FUNCTION _timescaledb_functions.ts_maybe_replace_now_mock()
+RETURNS TIMESTAMPTZ AS '@MODULE_PATHNAME@', 'ts_maybe_replace_now_mock' LANGUAGE C STABLE STRICT;
