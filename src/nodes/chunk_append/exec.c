@@ -1129,6 +1129,7 @@ ca_get_relation_constraints(Oid relationObjectId, Index varno, bool include_notn
  * constraints is the list of constraint expressions of the relation
  * baserestrictinfo is the list of RestrictInfos
  */
+// I understand that constraints holds all the chunks' constraints
 static bool
 can_exclude_chunk(List *constraints, List *baserestrictinfo)
 {
@@ -1174,6 +1175,9 @@ can_exclude_chunk(List *constraints, List *baserestrictinfo)
 	return false;
 }
 
+// this function reads all check constraints on children chunks, and
+// puts them in the ChunkAppendState's lists: initial_constraints and
+// filtered_constraints
 /*
  * Fetch the constraints for a relation and adjust range table indexes
  * if necessary.
