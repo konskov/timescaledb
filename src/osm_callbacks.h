@@ -15,6 +15,11 @@ typedef List *(*hypertable_drop_chunks_hook_type)(Oid osm_chunk_oid,
 												  const char *hypertable_schema_name,
 												  const char *hypertable_name, int64 range_start,
 												  int64 range_end);
+typedef int (*chunk_startup_exclusion_hook_type)(const char *hypertable_schema_name,
+												 const char *hypertable_name,
+												 Oid relid,
+												 ForeignScan *scan,
+												 List *constified_restrictinfos); // scan->plan->fdw_private
 
 /*
  * Object Storage Manager callbacks.
@@ -37,8 +42,10 @@ typedef struct
 	chunk_insert_check_hook_type chunk_insert_check_hook;
 	hypertable_drop_hook_type hypertable_drop_hook;
 	hypertable_drop_chunks_hook_type hypertable_drop_chunks_hook;
+	chunk_startup_exclusion_hook_type chunk_startup_exclusion_hook;
 } OsmCallbacks_Versioned;
 
 extern chunk_insert_check_hook_type ts_get_osm_chunk_insert_hook(void);
 extern hypertable_drop_hook_type ts_get_osm_hypertable_drop_hook(void);
 extern hypertable_drop_chunks_hook_type ts_get_osm_hypertable_drop_chunks_hook(void);
+extern chunk_startup_exclusion_hook_type ts_get_osm_chunk_startup_exclusion_hook(void);

@@ -18,6 +18,10 @@
 #include <optimizer/prep.h>
 #include <optimizer/restrictinfo.h>
 #include <parser/parsetree.h>
+#include <parser/parse_expr.h>
+#include <parser/parse_relation.h>
+#include <parser/parse_coerce.h>
+#include <parser/parse_collate.h>
 #include <rewrite/rewriteManip.h>
 #include <utils/builtins.h>
 #include <utils/memutils.h>
@@ -30,6 +34,8 @@
 #include "loader/lwlocks.h"
 #include "planner/planner.h"
 #include "transform.h"
+#include "dimension_slice.h"
+#include  "chunk.h"
 
 #define INVALID_SUBPLAN_INDEX (-1)
 #define NO_MATCHING_SUBPLANS (-2)
@@ -256,6 +262,35 @@ do_startup_exclusion(ChunkAppendState *state)
 			}
 			restrictinfos = constify_restrictinfos(&root, restrictinfos);
 
+#if PG14_GE
+			// this is where we run the OSM chunk exclusion code
+			chunk_startup_exclusion_hook_type osm_chunk_exclusion_hook = ts_get_osm_chunk_startup_exclusion_hook();
+
+			if (osm_chunk_exclusion_hook)
+			{
+				Index rt_index = scan->scanrelid;
+				RangeTblEntry *rte = rt_fetch(rt_index, estate->es_range_table);
+				// relation_constraints = ca_get_relation_constraints(rte->relid, rt_index, true);
+				// need to get chunk from the relid
+				Oid relid = rte->relid;
+				Chunk *chunk = ts_chunk_get_by_relid(relid, false);
+				Hypertable *ht = ts_hypertable_get_by_id(chunk->fd.hypertable_id);
+				int tiered_chunks_match = 0;
+				if (chunk && CHUNK_IS_OSM(chunk))
+				{
+					tiered_chunks_match = osm_chunk_exclusion_hook(NameStr(ht->fd.schema_name), NameStr(ht->fd.table_name), relid, (ForeignScan *)scan, restrictinfos);
+					if (tiered_chunks_match == 0)
+					{
+						// the OSM chunk can be skipped entirely
+						if (i < state->first_partial_plan)
+							filtered_first_partial_plan--;
+
+						continue;
+					}
+				}
+				// root->simple_rte_array[scan->scanrelid]->relid
+			}
+#endif
 			if (can_exclude_chunk(lfirst(lc_constraints), restrictinfos))
 			{
 				if (i < state->first_partial_plan)
@@ -1030,6 +1065,130 @@ constify_param_mutator(Node *node, void *context)
 	return expression_tree_mutator(node, constify_param_mutator, context);
 }
 
+static Node *
+cookConstraint(ParseState *pstate,
+			   Node *raw_constraint,
+			   char *relname)
+{
+	Node	   *expr;
+
+	/*
+	 * Transform raw parsetree to executable expression.
+	 */
+	expr = transformExpr(pstate, raw_constraint, EXPR_KIND_CHECK_CONSTRAINT);
+
+	/*
+	 * Make sure it yields a boolean result.
+	 */
+	expr = coerce_to_boolean(pstate, expr, "CHECK");
+
+	/*
+	 * Take care of collations.
+	 */
+	assign_expr_collations(pstate, expr);
+
+	/*
+	 * Make sure no outside relations are referred to (this is probably dead
+	 * code now that add_missing_from is history).
+	 */
+	if (list_length(pstate->p_rtable) != 1)
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_COLUMN_REFERENCE),
+				 errmsg("only table \"%s\" can be referenced in check constraint",
+						relname)));
+
+	return expr;
+}
+
+static Node *
+cook_dummy_constraint(Constraint *dummy, Relation rel)
+{
+	ParseNamespaceItem *nsitem;
+	ParseState *pstate = make_parsestate(NULL);
+	
+	pstate->p_sourcetext = NULL;
+	nsitem = addRangeTableEntryForRelation(pstate,
+										rel,
+										AccessShareLock,
+										NULL,
+										false,
+										true);
+	addNSItemToQuery(pstate, nsitem, true, true, true);
+	Node *expr = cookConstraint(pstate, dummy->raw_expr, RelationGetRelationName(rel));
+	free_parsestate(pstate);
+	return expr;
+}
+
+
+static Constraint *
+create_osm_dummy_check_constraint(const Dimension *dim, const DimensionSlice *slice)
+{
+	Constraint *constr = NULL;
+	bool isvarlena;
+	Node *dimdef;
+	ColumnRef *colref;
+	Datum startdat, enddat;
+	List *compexprs = NIL;
+	Oid outfuncid;
+
+	if (slice->fd.range_start == PG_INT64_MIN && slice->fd.range_end == PG_INT64_MAX)
+		return NULL;
+
+	colref = makeNode(ColumnRef);
+	colref->fields = list_make1(makeString(pstrdup(NameStr(dim->fd.column_name))));
+	colref->location = -1;
+
+	Assert(IS_OPEN_DIMENSION(dim));
+
+	dimdef = (Node *) colref;
+	getTypeOutputInfo(dim->fd.column_type, &outfuncid, &isvarlena);
+	startdat = ts_internal_to_time_value(slice->fd.range_start, dim->fd.column_type);
+	enddat = ts_internal_to_time_value(slice->fd.range_end, dim->fd.column_type);
+
+	startdat = OidFunctionCall1(outfuncid, startdat);
+	enddat = OidFunctionCall1(outfuncid, enddat);
+
+	/* Elide range constraint for +INF or -INF */
+	if (slice->fd.range_start != PG_INT64_MIN)
+	{
+		A_Const *start_const = makeNode(A_Const);
+		memcpy(&start_const->val, makeString(DatumGetCString(startdat)), sizeof(start_const->val));
+		start_const->location = -1;
+		A_Expr *ge_expr = makeSimpleA_Expr(AEXPR_OP, ">=", dimdef, (Node *) start_const, -1);
+		compexprs = lappend(compexprs, ge_expr);
+	}
+
+	if (slice->fd.range_end != PG_INT64_MAX)
+	{
+		A_Const *end_const = makeNode(A_Const);
+		memcpy(&end_const->val, makeString(DatumGetCString(enddat)), sizeof(end_const->val));
+		end_const->location = -1;
+		A_Expr *lt_expr = makeSimpleA_Expr(AEXPR_OP, "<", dimdef, (Node *) end_const, -1);
+		compexprs = lappend(compexprs, lt_expr);
+	}
+
+	if (slice->fd.range_start == PG_INT64_MAX - 1 && slice->fd.range_end == PG_INT64_MAX)
+	{
+		return NULL;
+	}
+
+	constr = makeNode(Constraint);
+	constr->contype = CONSTR_CHECK;
+	constr->conname = NULL;
+	constr->deferrable = false;
+	constr->skip_validation = true;
+	constr->initially_valid = true;
+
+	Assert(list_length(compexprs) >= 1);
+
+	if (list_length(compexprs) == 2)
+		constr->raw_expr = (Node *) makeBoolExpr(AND_EXPR, compexprs, -1);
+	else if (list_length(compexprs) == 1)
+		constr->raw_expr = linitial(compexprs);
+
+	return constr;
+}
+
 /*
  * stripped down version of postgres get_relation_constraints
  */
@@ -1050,6 +1209,34 @@ ca_get_relation_constraints(Oid relationObjectId, Index varno, bool include_notn
 	{
 		int num_check = constr->num_check;
 		int i;
+
+		/* are we the osm chunk?? call the OSM hook to handle chunk exclusion */
+		Chunk *chunk = ts_chunk_get_by_relid(relationObjectId, false);
+		if (chunk && IS_OSM_CHUNK(chunk))
+		{
+			/* find this hypertable's partitioning dimension */
+			Hypertable *ht = ts_hypertable_get_by_id(chunk->fd.hypertable_id);
+			Dimension const *time_dim = hyperspace_get_open_dimension(ht->space, 0);
+			DimensionSlice *slice = ts_chunk_get_osm_slice_and_lock(chunk->fd.id, time_dim->fd.id);
+			Constraint *dummy_constr = create_osm_dummy_check_constraint(time_dim, slice);
+			// check at this point the nodeToString reperesentaiton of dummy->raw_expr
+			// checkout AddRelationNewConstraints for how it's done (want an expression)
+			Node *cexpr = cook_dummy_constraint(dummy_constr, relation);
+
+			cexpr = eval_const_expressions(NULL, cexpr);
+			cexpr = (Node *) canonicalize_qual((Expr *) cexpr, true);
+
+			/* Fix Vars to have the desired varno */
+			if (varno != 1)
+				ChangeVarNodes(cexpr, 1, varno, 0);
+
+			/*
+			 * Finally, convert to implicit-AND format (that is, a List) and
+			 * append the resulting item(s) to our output list.
+			 */
+			result = list_concat(result, make_ands_implicit((Expr *) cexpr));
+		}
+		
 
 		for (i = 0; i < num_check; i++)
 		{

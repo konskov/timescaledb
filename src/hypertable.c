@@ -2406,7 +2406,7 @@ hypertable_update_status_osm(Hypertable *ht)
 	return success;
 }
 
-static DimensionSlice *
+DimensionSlice *
 ts_chunk_get_osm_slice_and_lock(int32 osm_chunk_id, int32 time_dim_id)
 {
 	ChunkConstraints *constraints =
