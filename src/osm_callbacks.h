@@ -8,6 +8,7 @@
 #include <postgres.h>
 #include <catalog/objectaddress.h>
 #include <nodes/plannodes.h>
+#include <nodes/execnodes.h>
 
 /* range_start and range_end are in PG internal timestamp format. */
 typedef int (*chunk_insert_check_hook_type)(Oid ht_oid, int64 range_start, int64 range_end);
@@ -18,7 +19,8 @@ typedef List *(*hypertable_drop_chunks_hook_type)(Oid osm_chunk_oid,
 												  int64 range_end);
 typedef int (*chunk_startup_exclusion_hook_type)(const char *hypertable_schema_name,
 												 const char *hypertable_name, Oid relid,
-												 ForeignScan *scan, List *constified_restrictinfos,
+												 ForeignScan *scan,
+												 ForeignScanState *scan_state, List *constified_restrictinfos,
 												 int32 varno); // scan->plan->fdw_private
 
 /*

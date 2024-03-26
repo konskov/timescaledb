@@ -114,6 +114,9 @@ typedef struct ChunkAppendState
 	/* sort options if this append is ordered, only used for EXPLAIN */
 	List *sort_options;
 
+	/* needed restrictinfos for the OSM chunk exclusion */
+	List *osm_restrict_infos;
+
 	/* number of loops and exclusions for EXPLAIN */
 	int runtime_number_loops;
 	int runtime_number_exclusions_parent;
@@ -201,6 +204,8 @@ ts_chunk_append_state_create(CustomScan *cscan)
 												 "ChunkApppend exclusion",
 												 ALLOCSET_DEFAULT_SIZES);
 
+	state->osm_restrict_infos = NIL;
+
 	return (Node *) state;
 }
 
@@ -262,7 +267,6 @@ do_startup_exclusion(ChunkAppendState *state)
 				restrictinfos = lappend(restrictinfos, ri);
 			}
 			restrictinfos = constify_restrictinfos(&root, restrictinfos);
-
 #if PG14_GE
 			// this is where we run the OSM chunk exclusion code
 			chunk_startup_exclusion_hook_type osm_chunk_exclusion_hook =
@@ -277,29 +281,14 @@ do_startup_exclusion(ChunkAppendState *state)
 				// need to get chunk from the relid
 				Oid relid = rte->relid;
 				Chunk *chunk = ts_chunk_get_by_relid(relid, false);
-				Hypertable *ht = ts_hypertable_get_by_id(chunk->fd.hypertable_id);
-				int tiered_chunks_match = 0;
+
 				// Index varno = rt_index;
 				if (chunk && IS_OSM_CHUNK(chunk))
-				{
-					tiered_chunks_match = osm_chunk_exclusion_hook(NameStr(ht->fd.schema_name),
-																   NameStr(ht->fd.table_name),
-																   relid,
-																   (ForeignScan *) scan,
-																   restrictinfos,
-																   rt_index);
-					if (tiered_chunks_match == 0)
-					{
-						// the OSM chunk can be skipped entirely
-						if (i < state->first_partial_plan)
-							filtered_first_partial_plan--;
-
-						continue;
-					}
-				}
+					state->osm_restrict_infos = restrictinfos;
 				// root->simple_rte_array[scan->scanrelid]->relid
 			}
 #endif
+
 			if (can_exclude_chunk(lfirst(lc_constraints), restrictinfos))
 			{
 				if (i < state->first_partial_plan)
@@ -426,6 +415,12 @@ perform_plan_init(ChunkAppendState *state, EState *estate, int eflags)
 	state->init_done = true;
 #endif
 
+#if PG14_GE
+	// get OSM chunk exclusion hook to call after state initialization.
+	chunk_startup_exclusion_hook_type osm_chunk_exclusion_hook =
+		ts_get_osm_chunk_startup_exclusion_hook();
+#endif
+
 	state->num_subplans = list_length(state->filtered_subplans);
 
 	if (state->num_subplans == 0)
@@ -444,6 +439,40 @@ perform_plan_init(ChunkAppendState *state, EState *estate, int eflags)
 		 * so explain and planstate_tree_walker can find it
 		 */
 		state->subplanstates[i] = ExecInitNode(lfirst(lc), estate, eflags);
+#if PG14_GE
+		if (osm_chunk_exclusion_hook)
+		{
+			Scan *scan = ts_chunk_append_get_scan_plan(lfirst(lc));
+			Index rt_index = scan->scanrelid;
+			EState *estate = state->csstate.ss.ps.state;
+			RangeTblEntry *rte = rt_fetch(rt_index, estate->es_range_table);
+			// need to get chunk from the relid
+			Oid relid = rte->relid;
+			Chunk *chunk = ts_chunk_get_by_relid(relid, false);
+			Hypertable *ht = ts_hypertable_get_by_id(chunk->fd.hypertable_id);
+			// int tiered_chunks_match = 0;
+			// List *restrictinfos = NIL;
+			// ListCell *ri_lc;
+			// foreach (ri_lc, state->filtered_ri_clauses)
+			// {
+			// 	RestrictInfo *ri = makeNode(RestrictInfo);
+			// 	ri->clause = lfirst(ri_lc);
+			// 	restrictinfos = lappend(restrictinfos, ri);
+			// }
+
+			// Index varno = rt_index;
+			if (chunk && IS_OSM_CHUNK(chunk))
+			{
+				osm_chunk_exclusion_hook(NameStr(ht->fd.schema_name),
+																NameStr(ht->fd.table_name),
+																relid,
+																(ForeignScan *) scan,
+																(ForeignScanState *) state->subplanstates[i],
+																state->osm_restrict_infos,
+																rt_index);
+			}
+		}
+#endif
 		state->csstate.custom_ps = lappend(state->csstate.custom_ps, state->subplanstates[i]);
 
 		/*
