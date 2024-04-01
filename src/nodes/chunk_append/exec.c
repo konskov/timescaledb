@@ -463,11 +463,15 @@ perform_plan_init(ChunkAppendState *state, EState *estate, int eflags)
 			// Index varno = rt_index;
 			if (chunk && IS_OSM_CHUNK(chunk))
 			{
+				ForeignScanState *fsstate = (ForeignScanState *)state->subplanstates[i];
+				// extract the ForeignScanState from the planstate
+				if (IsA(state->subplanstates[i], SortState) && IsA(((SortState *)state->subplanstates[i])->ss.ps.lefttree, ForeignScanState))
+					fsstate = (ForeignScanState *)((SortState *)state->subplanstates[i])->ss.ps.lefttree;
 				osm_chunk_exclusion_hook(NameStr(ht->fd.schema_name),
 																NameStr(ht->fd.table_name),
 																relid,
 																(ForeignScan *) scan,
-																(ForeignScanState *) state->subplanstates[i],
+																(ForeignScanState *) fsstate,
 																state->osm_restrict_infos,
 																rt_index);
 			}
