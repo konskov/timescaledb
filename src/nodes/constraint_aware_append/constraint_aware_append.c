@@ -257,8 +257,6 @@ ca_append_begin(CustomScanState *node, EState *estate, int eflags)
 					restrictinfos = lappend(restrictinfos, ri);
 				}
 				restrictinfos = constify_restrictinfos(&root, restrictinfos);
-				// this expects the chunk to already have check constraints, which are used in 
-				// can_exclude_chunk -> calling relation_excluded_by_constraints
 				if (can_exclude_chunk(&root, estate, scanrelid, restrictinfos))
 					continue;
 

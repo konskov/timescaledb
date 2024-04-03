@@ -19,8 +19,8 @@ typedef List *(*hypertable_drop_chunks_hook_type)(Oid osm_chunk_oid,
 												  int64 range_end);
 typedef int (*chunk_startup_exclusion_hook_type)(const char *hypertable_schema_name,
 												 const char *hypertable_name, Oid relid,
-												 ForeignScan *scan,
-												 ForeignScanState *scan_state, List *constified_restrictinfos,
+												 ForeignScan *scan, ForeignScanState *scan_state,
+												 List *constified_restrictinfos,
 												 int32 varno); // scan->plan->fdw_private
 
 /*
